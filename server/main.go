@@ -122,7 +122,7 @@ func (reg *Registrar) Heartbeat(ctx context.Context, req *proto.HeartbeatRequest
 
 	events := reg.findEventQueue(uid)
 	if events == nil {
-		return errors.BadRequest(proto.ErrorCode_ERR_NOT_FOUND.String(), "no event queue for %v", uid)
+		return errorNotRegistered(uid)
 	}
 
 	reg.heartbeat(uid)
@@ -131,7 +131,7 @@ func (reg *Registrar) Heartbeat(ctx context.Context, req *proto.HeartbeatRequest
 	select {
 	case events <- event:
 	default:
-		return errors.InternalServerError(proto.ErrorCode_ERR_NO_CONSUMER.String(), "no consumer for %v", uid)
+		return errorNoConsumer(uid)
 	}
 	return nil
 }
@@ -148,7 +148,7 @@ func (reg *Registrar) EventStream(ctx context.Context, req *proto.EventStreamReq
 	}
 	events := reg.findEventQueue(uid)
 	if events == nil {
-		return errors.BadRequest(proto.ErrorCode_ERR_NOT_FOUND.String(), "no event queue for %v", uid)
+		return errorNotRegistered(uid)
 	}
 	errch := make(chan error)
 	// handle event
@@ -205,7 +205,7 @@ func (pub *Publisher) Publish(ctx context.Context, req *proto.PublishRequest, re
 	}
 	events := gRegistrar.findEventQueue(uid)
 	if events == nil {
-		return errors.InternalServerError(proto.ErrorCode_ERR_NOT_FOUND.String(), "no event queue for %v", uid)
+		return errorNotRegistered(uid)
 	}
 	event := &proto.Event{
 		Type: proto.EventType_EVT_TEXT,
@@ -214,7 +214,7 @@ func (pub *Publisher) Publish(ctx context.Context, req *proto.PublishRequest, re
 	select {
 	case events <- event:
 	default:
-		return errors.InternalServerError(proto.ErrorCode_ERR_NO_CONSUMER.String(), "no consumer for %v", uid)
+		return errorNoConsumer(uid)
 	}
 	return nil
 }
@@ -261,4 +261,12 @@ func metadataToHeader(md metadata.Metadata) *proto.Header {
 	buf, _ := json.Marshal(md)
 	json.Unmarshal(buf, header)
 	return header
+}
+
+func errorNotRegistered(uid UniqueID) error {
+	return errors.BadRequest(proto.ErrorCode_ERR_NOT_FOUND.String(), "not registered for %v", uid)
+}
+
+func errorNoConsumer(uid UniqueID) error {
+	return errors.InternalServerError(proto.ErrorCode_ERR_NO_CONSUMER.String(), "no consumer for %v", uid)
 }

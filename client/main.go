@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"os"
 	"strconv"
 	"time"
 
@@ -21,8 +22,12 @@ func headerToMetadata(header *proto.Header) metadata.Metadata {
 }
 
 func main() {
+	userID := os.Getenv("USER_ID")
+	if userID == "" {
+		userID = "homerhuang"
+	}
 	header := &proto.Header{
-		UserId: "homerhuang",
+		UserId: userID,
 	}
 	ctx := metadata.NewContext(context.Background(), headerToMetadata(header))
 	service := micro.NewService()
