@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package sims.proto;
+option go_package = "github.com/aclisp/sims/proto";
+
+enum ErrorCode {
+    ERR_UNSPECIFIED = 0;
+    ERR_NOT_FOUND = 1;
+    ERR_ALREADY_EXISTS = 2;
+    ERR_MISSING_USERID = 3;
+    ERR_MISSING_HEADER = 4;
+    ERR_NO_CONSUMER = 5;
+}
+
+enum EventType {
+    EVT_HEARTBEAT = 0;
+    EVT_TEXT = 1;
+    EVT_JSON = 2;
+    EVT_PROTOBUF = 3;
+    EVT_BINARY = 4;
+}
+
+message ServerConfig {
+}
+
+message User {
+}
+
+message Header {
+    string request_id = 1; // RPC request scope
+    string user_id    = 2; // User scope
+    string device_id  = 3; // device scope
+    repeated string groups = 4; // subscription group IDs
+}
+
+message Event {
+    EventType type = 1;
+    bytes data = 2;
+}
+
+service Registrar {
+    rpc Register (RegisterRequest) returns (RegisterResponse);
+    rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse);
+    rpc EventStream (EventStreamRequest) returns (stream Event);
+    rpc Unregister (UnregisterRequest) returns (UnregisterResponse);
+    rpc List (ListRequest) returns (ListResponse);
+}
+
+service Publisher {
+    rpc Publish (PublishRequest) returns (PublishResponse);
+}
+
+service Subscriber {
+    rpc Subscribe (SubscribeRequest) returns (SubscribeResponse);
+}
+
+message EventStreamRequest {
+}
+
+message RegisterRequest {
+}
+
+message RegisterResponse {
+}
+
+message UnregisterRequest {
+}
+
+message UnregisterResponse {
+}
+
+message PublishRequest {
+    string user_id = 1;
+}
+
+message PublishResponse {
+}
+
+message SubscribeRequest {
+}
+
+message SubscribeResponse {
+}
+
+message HeartbeatRequest {
+}
+
+message HeartbeatResponse {
+}
+
+message ListRequest {
+}
+
+message Channel {
+    string user_id = 1;
+    string device_id = 2;
+    string birth = 3;
+    string last_heartbeat = 4;
+}
+
+message ListResponse {
+    repeated Channel channels = 1;
+}
