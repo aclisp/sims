@@ -137,7 +137,7 @@ func (reg *Registrar) Heartbeat(ctx context.Context, req *proto.HeartbeatRequest
 }
 
 // EventStream TODO
-func (reg *Registrar) EventStream(ctx context.Context, req *proto.EventStreamRequest, stream proto.Registrar_EventStreamStream) error {
+func (reg *Registrar) EventStream(ctx context.Context, req *proto.EventStreamRequest, stream proto.SNode_EventStreamStream) error {
 	md, _ := metadata.FromContext(ctx)
 	header := metadataToHeader(md)
 	trace := header.RequestId
@@ -224,7 +224,7 @@ func main() {
 		micro.Name("go.micro.srv.sims"),
 	)
 
-	proto.RegisterRegistrarHandler(service.Server(), gRegistrar)
+	proto.RegisterSNodeHandler(service.Server(), gRegistrar)
 	proto.RegisterPublisherHandler(service.Server(), new(Publisher))
 
 	logger.Info("run")

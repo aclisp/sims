@@ -31,7 +31,7 @@ func main() {
 	}
 	ctx := metadata.NewContext(context.Background(), headerToMetadata(header))
 	service := micro.NewService()
-	cl := proto.NewRegistrarService("go.micro.srv.sims", service.Client())
+	cl := proto.NewSNodeService("go.micro.srv.sims", service.Client())
 
 	_, err := cl.Register(ctx, &proto.RegisterRequest{})
 	if err != nil {

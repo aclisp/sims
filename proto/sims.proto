@@ -38,7 +38,7 @@ message Event {
     bytes data = 2;
 }
 
-service Registrar {
+service SNode {
     rpc Register (RegisterRequest) returns (RegisterResponse);
     rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse);
     rpc EventStream (EventStreamRequest) returns (stream Event);
