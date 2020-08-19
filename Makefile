@@ -24,3 +24,9 @@ proto:
 	--micro_out=${PROTO} --micro_opt=paths=source_relative \
 	--go_out=${PROTO} --go_opt=paths=source_relative \
 	${PROTO}/*.proto
+
+.PHONY: protoc
+protoc:
+	protoc --proto_path=${PROTO} \
+	--go_out=plugins=grpc:${PROTO}/go --go_opt=paths=source_relative \
+	${PROTO}/*.proto
