@@ -1,5 +1,17 @@
 PROTO=./proto
 
+.PHONY: server
+server:
+	cd server && go build -o ../bin; cd ..
+
+.PHONY: client
+client:
+	cd client && go build -o ../bin; cd ..
+
+.PHONY: pub
+pub:
+	cd pub && go build -o ../bin; cd ..
+
 .PHONY: all
 all:
 	cd client && go build -o ../bin; cd ..

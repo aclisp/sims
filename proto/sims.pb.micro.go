@@ -33,36 +33,36 @@ var _ context.Context
 var _ client.Option
 var _ server.Option
 
-// Api Endpoints for SNode service
+// Api Endpoints for IMNode service
 
-func NewSNodeEndpoints() []*api.Endpoint {
+func NewIMNodeEndpoints() []*api.Endpoint {
 	return []*api.Endpoint{}
 }
 
-// Client API for SNode service
+// Client API for IMNode service
 
-type SNodeService interface {
+type IMNodeService interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...client.CallOption) (*RegisterResponse, error)
 	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...client.CallOption) (*HeartbeatResponse, error)
-	EventStream(ctx context.Context, in *EventStreamRequest, opts ...client.CallOption) (SNode_EventStreamService, error)
+	EventStream(ctx context.Context, in *EventStreamRequest, opts ...client.CallOption) (IMNode_EventStreamService, error)
 	Unregister(ctx context.Context, in *UnregisterRequest, opts ...client.CallOption) (*UnregisterResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...client.CallOption) (*ListResponse, error)
 }
 
-type sNodeService struct {
+type iMNodeService struct {
 	c    client.Client
 	name string
 }
 
-func NewSNodeService(name string, c client.Client) SNodeService {
-	return &sNodeService{
+func NewIMNodeService(name string, c client.Client) IMNodeService {
+	return &iMNodeService{
 		c:    c,
 		name: name,
 	}
 }
 
-func (c *sNodeService) Register(ctx context.Context, in *RegisterRequest, opts ...client.CallOption) (*RegisterResponse, error) {
-	req := c.c.NewRequest(c.name, "SNode.Register", in)
+func (c *iMNodeService) Register(ctx context.Context, in *RegisterRequest, opts ...client.CallOption) (*RegisterResponse, error) {
+	req := c.c.NewRequest(c.name, "IMNode.Register", in)
 	out := new(RegisterResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -71,8 +71,8 @@ func (c *sNodeService) Register(ctx context.Context, in *RegisterRequest, opts .
 	return out, nil
 }
 
-func (c *sNodeService) Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...client.CallOption) (*HeartbeatResponse, error) {
-	req := c.c.NewRequest(c.name, "SNode.Heartbeat", in)
+func (c *iMNodeService) Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...client.CallOption) (*HeartbeatResponse, error) {
+	req := c.c.NewRequest(c.name, "IMNode.Heartbeat", in)
 	out := new(HeartbeatResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -81,8 +81,8 @@ func (c *sNodeService) Heartbeat(ctx context.Context, in *HeartbeatRequest, opts
 	return out, nil
 }
 
-func (c *sNodeService) EventStream(ctx context.Context, in *EventStreamRequest, opts ...client.CallOption) (SNode_EventStreamService, error) {
-	req := c.c.NewRequest(c.name, "SNode.EventStream", &EventStreamRequest{})
+func (c *iMNodeService) EventStream(ctx context.Context, in *EventStreamRequest, opts ...client.CallOption) (IMNode_EventStreamService, error) {
+	req := c.c.NewRequest(c.name, "IMNode.EventStream", &EventStreamRequest{})
 	stream, err := c.c.Stream(ctx, req, opts...)
 	if err != nil {
 		return nil, err
@@ -90,10 +90,10 @@ func (c *sNodeService) EventStream(ctx context.Context, in *EventStreamRequest, 
 	if err := stream.Send(in); err != nil {
 		return nil, err
 	}
-	return &sNodeServiceEventStream{stream}, nil
+	return &iMNodeServiceEventStream{stream}, nil
 }
 
-type SNode_EventStreamService interface {
+type IMNode_EventStreamService interface {
 	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
@@ -101,27 +101,27 @@ type SNode_EventStreamService interface {
 	Recv() (*Event, error)
 }
 
-type sNodeServiceEventStream struct {
+type iMNodeServiceEventStream struct {
 	stream client.Stream
 }
 
-func (x *sNodeServiceEventStream) Close() error {
+func (x *iMNodeServiceEventStream) Close() error {
 	return x.stream.Close()
 }
 
-func (x *sNodeServiceEventStream) Context() context.Context {
+func (x *iMNodeServiceEventStream) Context() context.Context {
 	return x.stream.Context()
 }
 
-func (x *sNodeServiceEventStream) SendMsg(m interface{}) error {
+func (x *iMNodeServiceEventStream) SendMsg(m interface{}) error {
 	return x.stream.Send(m)
 }
 
-func (x *sNodeServiceEventStream) RecvMsg(m interface{}) error {
+func (x *iMNodeServiceEventStream) RecvMsg(m interface{}) error {
 	return x.stream.Recv(m)
 }
 
-func (x *sNodeServiceEventStream) Recv() (*Event, error) {
+func (x *iMNodeServiceEventStream) Recv() (*Event, error) {
 	m := new(Event)
 	err := x.stream.Recv(m)
 	if err != nil {
@@ -130,8 +130,8 @@ func (x *sNodeServiceEventStream) Recv() (*Event, error) {
 	return m, nil
 }
 
-func (c *sNodeService) Unregister(ctx context.Context, in *UnregisterRequest, opts ...client.CallOption) (*UnregisterResponse, error) {
-	req := c.c.NewRequest(c.name, "SNode.Unregister", in)
+func (c *iMNodeService) Unregister(ctx context.Context, in *UnregisterRequest, opts ...client.CallOption) (*UnregisterResponse, error) {
+	req := c.c.NewRequest(c.name, "IMNode.Unregister", in)
 	out := new(UnregisterResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -140,8 +140,8 @@ func (c *sNodeService) Unregister(ctx context.Context, in *UnregisterRequest, op
 	return out, nil
 }
 
-func (c *sNodeService) List(ctx context.Context, in *ListRequest, opts ...client.CallOption) (*ListResponse, error) {
-	req := c.c.NewRequest(c.name, "SNode.List", in)
+func (c *iMNodeService) List(ctx context.Context, in *ListRequest, opts ...client.CallOption) (*ListResponse, error) {
+	req := c.c.NewRequest(c.name, "IMNode.List", in)
 	out := new(ListResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -150,52 +150,52 @@ func (c *sNodeService) List(ctx context.Context, in *ListRequest, opts ...client
 	return out, nil
 }
 
-// Server API for SNode service
+// Server API for IMNode service
 
-type SNodeHandler interface {
+type IMNodeHandler interface {
 	Register(context.Context, *RegisterRequest, *RegisterResponse) error
 	Heartbeat(context.Context, *HeartbeatRequest, *HeartbeatResponse) error
-	EventStream(context.Context, *EventStreamRequest, SNode_EventStreamStream) error
+	EventStream(context.Context, *EventStreamRequest, IMNode_EventStreamStream) error
 	Unregister(context.Context, *UnregisterRequest, *UnregisterResponse) error
 	List(context.Context, *ListRequest, *ListResponse) error
 }
 
-func RegisterSNodeHandler(s server.Server, hdlr SNodeHandler, opts ...server.HandlerOption) error {
-	type sNode interface {
+func RegisterIMNodeHandler(s server.Server, hdlr IMNodeHandler, opts ...server.HandlerOption) error {
+	type iMNode interface {
 		Register(ctx context.Context, in *RegisterRequest, out *RegisterResponse) error
 		Heartbeat(ctx context.Context, in *HeartbeatRequest, out *HeartbeatResponse) error
 		EventStream(ctx context.Context, stream server.Stream) error
 		Unregister(ctx context.Context, in *UnregisterRequest, out *UnregisterResponse) error
 		List(ctx context.Context, in *ListRequest, out *ListResponse) error
 	}
-	type SNode struct {
-		sNode
+	type IMNode struct {
+		iMNode
 	}
-	h := &sNodeHandler{hdlr}
-	return s.Handle(s.NewHandler(&SNode{h}, opts...))
+	h := &iMNodeHandler{hdlr}
+	return s.Handle(s.NewHandler(&IMNode{h}, opts...))
 }
 
-type sNodeHandler struct {
-	SNodeHandler
+type iMNodeHandler struct {
+	IMNodeHandler
 }
 
-func (h *sNodeHandler) Register(ctx context.Context, in *RegisterRequest, out *RegisterResponse) error {
-	return h.SNodeHandler.Register(ctx, in, out)
+func (h *iMNodeHandler) Register(ctx context.Context, in *RegisterRequest, out *RegisterResponse) error {
+	return h.IMNodeHandler.Register(ctx, in, out)
 }
 
-func (h *sNodeHandler) Heartbeat(ctx context.Context, in *HeartbeatRequest, out *HeartbeatResponse) error {
-	return h.SNodeHandler.Heartbeat(ctx, in, out)
+func (h *iMNodeHandler) Heartbeat(ctx context.Context, in *HeartbeatRequest, out *HeartbeatResponse) error {
+	return h.IMNodeHandler.Heartbeat(ctx, in, out)
 }
 
-func (h *sNodeHandler) EventStream(ctx context.Context, stream server.Stream) error {
+func (h *iMNodeHandler) EventStream(ctx context.Context, stream server.Stream) error {
 	m := new(EventStreamRequest)
 	if err := stream.Recv(m); err != nil {
 		return err
 	}
-	return h.SNodeHandler.EventStream(ctx, m, &sNodeEventStreamStream{stream})
+	return h.IMNodeHandler.EventStream(ctx, m, &iMNodeEventStreamStream{stream})
 }
 
-type SNode_EventStreamStream interface {
+type IMNode_EventStreamStream interface {
 	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
@@ -203,36 +203,36 @@ type SNode_EventStreamStream interface {
 	Send(*Event) error
 }
 
-type sNodeEventStreamStream struct {
+type iMNodeEventStreamStream struct {
 	stream server.Stream
 }
 
-func (x *sNodeEventStreamStream) Close() error {
+func (x *iMNodeEventStreamStream) Close() error {
 	return x.stream.Close()
 }
 
-func (x *sNodeEventStreamStream) Context() context.Context {
+func (x *iMNodeEventStreamStream) Context() context.Context {
 	return x.stream.Context()
 }
 
-func (x *sNodeEventStreamStream) SendMsg(m interface{}) error {
+func (x *iMNodeEventStreamStream) SendMsg(m interface{}) error {
 	return x.stream.Send(m)
 }
 
-func (x *sNodeEventStreamStream) RecvMsg(m interface{}) error {
+func (x *iMNodeEventStreamStream) RecvMsg(m interface{}) error {
 	return x.stream.Recv(m)
 }
 
-func (x *sNodeEventStreamStream) Send(m *Event) error {
+func (x *iMNodeEventStreamStream) Send(m *Event) error {
 	return x.stream.Send(m)
 }
 
-func (h *sNodeHandler) Unregister(ctx context.Context, in *UnregisterRequest, out *UnregisterResponse) error {
-	return h.SNodeHandler.Unregister(ctx, in, out)
+func (h *iMNodeHandler) Unregister(ctx context.Context, in *UnregisterRequest, out *UnregisterResponse) error {
+	return h.IMNodeHandler.Unregister(ctx, in, out)
 }
 
-func (h *sNodeHandler) List(ctx context.Context, in *ListRequest, out *ListResponse) error {
-	return h.SNodeHandler.List(ctx, in, out)
+func (h *iMNodeHandler) List(ctx context.Context, in *ListRequest, out *ListResponse) error {
+	return h.IMNodeHandler.List(ctx, in, out)
 }
 
 // Api Endpoints for Publisher service
