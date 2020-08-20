@@ -224,6 +224,8 @@ func main() {
 		micro.Name("go.micro.srv.sims"),
 	)
 
+	service.Init()
+
 	proto.RegisterIMNodeHandler(service.Server(), gRegistrar)
 	proto.RegisterPublisherHandler(service.Server(), new(Publisher))
 
