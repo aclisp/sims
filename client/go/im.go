@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"strconv"
 	"time"
 
@@ -18,12 +19,13 @@ type Client struct {
 	Target string
 	UserID string
 
-	conn *grpc.ClientConn
+	subscribeCtx context.Context
+	cancel       context.CancelFunc
 }
 
 // Publish TODO
 func (c *Client) Publish(toUserID, text string) error {
-	conn, err := grpc.DialContext(context.TODO(), c.Target, grpc.WithBlock(), grpc.WithInsecure())
+	conn, err := grpc.DialContext(context.TODO(), c.Target, grpc.WithInsecure())
 	if err != nil {
 		return fmt.Errorf("grpc dial: %w", err)
 	}
@@ -43,9 +45,24 @@ func (c *Client) Publish(toUserID, text string) error {
 	return nil
 }
 
+// Subscribe TODO
+func (c *Client) Subscribe(callback func(*proto.Event)) {
+	c.subscribeCtx, c.cancel = context.WithCancel(context.Background())
+	go func() {
+		for {
+			if err := c.SubscribeEvent(c.subscribeCtx, callback); err != nil {
+				log.Printf("subscribe event failure, retrying: %v", err)
+			}
+			if c.subscribeCtx.Err() != nil {
+				break
+			}
+		}
+	}()
+}
+
 // SubscribeEvent TODO
-func (c *Client) SubscribeEvent(callback func(*proto.Event)) error {
-	conn, err := grpc.DialContext(context.TODO(), c.Target, grpc.WithBlock(), grpc.WithInsecure())
+func (c *Client) SubscribeEvent(ctx context.Context, callback func(*proto.Event)) error {
+	conn, err := grpc.DialContext(ctx, c.Target, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return fmt.Errorf("grpc dial: %w", err)
 	}
@@ -56,8 +73,8 @@ func (c *Client) SubscribeEvent(callback func(*proto.Event)) error {
 	header := &proto.Header{
 		UserId: c.UserID,
 	}
-	ctx := metadata.NewOutgoingContext(context.TODO(), headerToMetadata(header))
-	if _, err := node.Register(ctx, &proto.RegisterRequest{}); err != nil {
+	outgoingCtx := metadata.NewOutgoingContext(ctx, headerToMetadata(header))
+	if _, err := node.Register(outgoingCtx, &proto.RegisterRequest{}); err != nil {
 		return fmt.Errorf("node register: %w", err)
 	}
 
@@ -65,7 +82,7 @@ func (c *Client) SubscribeEvent(callback func(*proto.Event)) error {
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		for range ticker.C {
-			_, err := node.Heartbeat(ctx, &proto.HeartbeatRequest{})
+			_, err := node.Heartbeat(outgoingCtx, &proto.HeartbeatRequest{})
 			if err != nil {
 				ticker.Stop()
 				errHeartbeat <- err
@@ -80,8 +97,8 @@ func (c *Client) SubscribeEvent(callback func(*proto.Event)) error {
 			UserId:    c.UserID,
 			RequestId: strconv.FormatInt(time.Now().Unix(), 10),
 		}
-		ctx := metadata.NewOutgoingContext(context.TODO(), headerToMetadata(header))
-		stream, err := node.EventStream(ctx, &proto.EventStreamRequest{})
+		outgoingCtx := metadata.NewOutgoingContext(ctx, headerToMetadata(header))
+		stream, err := node.EventStream(outgoingCtx, &proto.EventStreamRequest{})
 		if err != nil {
 			errEvent <- err
 			return
@@ -117,7 +134,12 @@ func (c *Client) SubscribeEvent(callback func(*proto.Event)) error {
 
 // Close TODO
 func (c *Client) Close() error {
-	conn, err := grpc.DialContext(context.TODO(), c.Target, grpc.WithBlock(), grpc.WithInsecure())
+	defer func() {
+		if c.cancel != nil {
+			c.cancel()
+		}
+	}()
+	conn, err := grpc.DialContext(context.TODO(), c.Target, grpc.WithInsecure())
 	if err != nil {
 		return fmt.Errorf("grpc dial: %w", err)
 	}

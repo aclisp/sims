@@ -2,6 +2,7 @@ package im_test
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,7 +32,7 @@ func TestEvent(t *testing.T) {
 
 	errSubscribe := make(chan error, 1)
 	go func() {
-		if err := client.SubscribeEvent(func(e *proto.Event) {
+		if err := client.SubscribeEvent(context.Background(), func(e *proto.Event) {
 			t.Log(e)
 			if e.Type == proto.EventType_EVT_TEXT && string(e.Data) == Text {
 			} else {
@@ -76,7 +77,7 @@ func TestClose(t *testing.T) {
 
 	errSubscribe := make(chan error, 1)
 	go func() {
-		if err := client.SubscribeEvent(func(e *proto.Event) {}); err != nil {
+		if err := client.SubscribeEvent(context.Background(), func(e *proto.Event) {}); err != nil {
 			errSubscribe <- err
 		}
 		close(errSubscribe)
