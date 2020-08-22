@@ -216,10 +216,13 @@ func (pub *Publisher) Publish(ctx context.Context, req *proto.PublishRequest, re
 	if events == nil {
 		return errorNotRegistered(uid)
 	}
-	event := &proto.Event{
-		Type: proto.EventType_EVT_TEXT,
-		Data: []byte(time.Now().String()),
+	if req.Event == nil {
+		return errors.BadRequest(proto.ErrorCode_ERR_MISSING_EVENT.String(), "nil event for %v", uid)
 	}
+	if req.Event.Type == proto.EventType_EVT_HEARTBEAT {
+		return errors.BadRequest(proto.ErrorCode_ERR_INVALID_EVENT_TYPE.String(), "event type should not be EVT_HEARTBEAT")
+	}
+	event := req.Event
 	select {
 	case events <- event:
 	default:

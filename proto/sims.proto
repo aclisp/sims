@@ -10,6 +10,8 @@ enum ErrorCode {
     ERR_MISSING_USERID = 3;
     ERR_MISSING_HEADER = 4;
     ERR_NO_CONSUMER = 5;
+    ERR_MISSING_EVENT = 6;
+    ERR_INVALID_EVENT_TYPE = 7;
 }
 
 enum EventType {
@@ -71,6 +73,7 @@ message UnregisterResponse {
 
 message PublishRequest {
     string user_id = 1;
+    Event event = 2;
 }
 
 message PublishResponse {

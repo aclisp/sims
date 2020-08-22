@@ -27,10 +27,16 @@ func TestEvent(t *testing.T) {
 		UserID: "homerhuang",
 	}
 
+	const Text = "hello"
+
 	errSubscribe := make(chan error, 1)
 	go func() {
 		if err := client.SubscribeEvent(func(e *proto.Event) {
 			t.Log(e)
+			if e.Type == proto.EventType_EVT_TEXT && string(e.Data) == Text {
+			} else {
+				t.Fail()
+			}
 		}); err != nil {
 			errSubscribe <- err
 		}
@@ -40,7 +46,7 @@ func TestEvent(t *testing.T) {
 
 	errPublish := make(chan error, 1)
 	go func() {
-		if err := client.Publish("homerhuang"); err != nil {
+		if err := client.Publish("homerhuang", Text); err != nil {
 			errPublish <- err
 		}
 		close(errPublish)

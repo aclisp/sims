@@ -22,7 +22,7 @@ type Client struct {
 }
 
 // Publish TODO
-func (c *Client) Publish(toUserID string) error {
+func (c *Client) Publish(toUserID, text string) error {
 	conn, err := grpc.DialContext(context.TODO(), c.Target, grpc.WithBlock(), grpc.WithInsecure())
 	if err != nil {
 		return fmt.Errorf("grpc dial: %w", err)
@@ -32,6 +32,10 @@ func (c *Client) Publish(toUserID string) error {
 	node := proto.NewPublisherClient(conn)
 	_, err = node.Publish(context.TODO(), &proto.PublishRequest{
 		UserId: toUserID,
+		Event: &proto.Event{
+			Type: proto.EventType_EVT_TEXT,
+			Data: []byte(text),
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("sims publish: %w", err)
