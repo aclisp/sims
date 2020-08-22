@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/aclisp/sims/proto"
@@ -45,6 +47,13 @@ func main() {
 				logger.Fatalf("heartbeat error: %v", err)
 			}
 		}
+	}()
+
+	term := make(chan os.Signal, 1)
+	signal.Notify(term, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-term
+		cl.Unregister(ctx, &proto.UnregisterRequest{})
 	}()
 
 	header.RequestId = strconv.FormatInt(time.Now().Unix(), 10)

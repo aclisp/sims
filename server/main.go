@@ -120,6 +120,15 @@ func (reg *Registrar) createEventQueue(uid UniqueID) {
 	reg.channels[uid] = channel
 }
 
+func (reg *Registrar) deleteEventQueue(uid UniqueID) {
+	reg.lock.Lock()
+	defer reg.lock.Unlock()
+	if channel, ok := reg.channels[uid]; ok {
+		close(channel.EventQueue)
+		delete(reg.channels, uid)
+	}
+}
+
 // Heartbeat TODO
 func (reg *Registrar) Heartbeat(ctx context.Context, req *proto.HeartbeatRequest, res *proto.HeartbeatResponse) error {
 	md, _ := metadata.FromContext(ctx)
@@ -194,7 +203,14 @@ func (reg *Registrar) Register(ctx context.Context, req *proto.RegisterRequest, 
 }
 
 // Unregister TODO
-func (reg *Registrar) Unregister(context.Context, *proto.UnregisterRequest, *proto.UnregisterResponse) error {
+func (reg *Registrar) Unregister(ctx context.Context, req *proto.UnregisterRequest, res *proto.UnregisterResponse) error {
+	md, _ := metadata.FromContext(ctx)
+	header := metadataToHeader(md)
+	uid, err := uniqueIDFromHeader(header)
+	if err != nil {
+		return err
+	}
+	reg.deleteEventQueue(uid)
 	return nil
 }
 

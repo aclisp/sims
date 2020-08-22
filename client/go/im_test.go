@@ -44,14 +44,7 @@ func TestEvent(t *testing.T) {
 	}()
 	time.Sleep(time.Second)
 
-	errPublish := make(chan error, 1)
-	go func() {
-		if err := client.Publish("homerhuang", Text); err != nil {
-			errPublish <- err
-		}
-		close(errPublish)
-	}()
-	if err, ok := <-errPublish; ok {
+	if err := client.Publish("homerhuang", Text); err != nil {
 		t.Log(err)
 		t.Fail()
 	}
@@ -62,6 +55,45 @@ func TestEvent(t *testing.T) {
 		t.Log(err)
 		t.Fail()
 	}
+
+	for _, out := range server.Out() {
+		t.Log(out)
+	}
+}
+
+func TestClose(t *testing.T) {
+	bin := bin()
+
+	server := Command{Path: bin, Name: "server", Args: []string{"--server_address", "127.0.0.1:18080"}}
+	if err := server.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	client := im.Client{
+		Target: "127.0.0.1:18080",
+		UserID: "homerhuang",
+	}
+
+	errSubscribe := make(chan error, 1)
+	go func() {
+		if err := client.SubscribeEvent(func(e *proto.Event) {}); err != nil {
+			errSubscribe <- err
+		}
+		close(errSubscribe)
+	}()
+	time.Sleep(time.Second)
+
+	if err := client.Close(); err != nil {
+		t.Log(err)
+		t.Fail()
+	}
+
+	if err, ok := <-errSubscribe; ok {
+		t.Log(err)
+		t.Fail()
+	}
+
+	server.Stop()
 
 	for _, out := range server.Out() {
 		t.Log(out)

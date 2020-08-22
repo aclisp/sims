@@ -115,6 +115,25 @@ func (c *Client) SubscribeEvent(callback func(*proto.Event)) error {
 	return nil //fmt.Errorf("node EOF: %w", io.EOF)
 }
 
+// Close TODO
+func (c *Client) Close() error {
+	conn, err := grpc.DialContext(context.TODO(), c.Target, grpc.WithBlock(), grpc.WithInsecure())
+	if err != nil {
+		return fmt.Errorf("grpc dial: %w", err)
+	}
+	defer conn.Close()
+
+	node := proto.NewIMNodeClient(conn)
+	header := &proto.Header{
+		UserId: c.UserID,
+	}
+	ctx := metadata.NewOutgoingContext(context.TODO(), headerToMetadata(header))
+	if _, err := node.Unregister(ctx, &proto.UnregisterRequest{}); err != nil {
+		return fmt.Errorf("node unregister: %w", err)
+	}
+	return nil
+}
+
 func headerToMetadata(header *proto.Header) metadata.MD {
 	var m map[string]string
 	buf, _ := json.Marshal(header)
