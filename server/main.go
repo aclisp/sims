@@ -80,6 +80,15 @@ func (reg *Registrar) housekeep() {
 	}
 }
 
+func (reg *Registrar) close() {
+	reg.lock.Lock()
+	defer reg.lock.Unlock()
+
+	for _, channel := range reg.channels {
+		close(channel.EventQueue)
+	}
+}
+
 func (reg *Registrar) findEventQueue(uid UniqueID) chan *proto.Event {
 	reg.lock.Lock()
 	defer reg.lock.Unlock()
@@ -222,6 +231,10 @@ func (pub *Publisher) Publish(ctx context.Context, req *proto.PublishRequest, re
 func main() {
 	service := micro.NewService(
 		micro.Name("go.micro.srv.sims"),
+		micro.BeforeStop(func() error {
+			gRegistrar.close()
+			return nil
+		}),
 	)
 
 	service.Init()
@@ -230,14 +243,16 @@ func main() {
 	proto.RegisterPublisherHandler(service.Server(), new(Publisher))
 
 	logger.Info("run")
+	ticker := time.NewTicker(5 * time.Second)
 	go func() {
-		for range time.Tick(5 * time.Second) {
+		for range ticker.C {
 			gRegistrar.housekeep()
 		}
 	}()
 	if err := service.Run(); err != nil {
 		logger.Fatal(err)
 	}
+	ticker.Stop()
 }
 
 // UniqueID TODO
