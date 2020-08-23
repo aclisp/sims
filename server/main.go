@@ -3,15 +3,19 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	_ "net/http/pprof"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/aclisp/sims/proto"
+	"github.com/micro/cli/v2"
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/errors"
 	"github.com/micro/go-micro/v2/logger"
 	"github.com/micro/go-micro/v2/metadata"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -252,6 +256,19 @@ func main() {
 		micro.Name("go.micro.srv.sims"),
 		micro.BeforeStop(func() error {
 			gRegistrar.close()
+			return nil
+		}),
+		micro.Flags(&cli.StringFlag{
+			Name:    "pprof_address",
+			EnvVars: []string{"PPROF_ADDRESS"},
+			Usage:   "Bind address for pprof and grpc.EnableTracing. 127.0.0.1:6060",
+		}),
+		micro.Action(func(ctx *cli.Context) error {
+			if addr := ctx.String("pprof_address"); len(addr) > 0 {
+				// for pprof and trace
+				grpc.EnableTracing = true
+				go func() { logger.Warn(http.ListenAndServe(addr, nil)) }()
+			}
 			return nil
 		}),
 	)

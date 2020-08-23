@@ -9,6 +9,7 @@ Simple IM Server
   + SIMS can be started with bind address
 * [x] Simplified proto naming
 * [x] Reliable publishing: error correct and tracable
+* [x] add go-micro & grpc debugging and tracing
 * [ ] Real world deployment
 * [ ] Performance testing
 
@@ -31,3 +32,16 @@ Directory Layout
 * `server/` the sims server
 * `tools/` dependent tools
   + `bin` protoc-gen-go protoc-gen-micro micro
+
+Debugging
+---
+
+1. Start server with `--pprof_address 127.0.0.1:6060`
+1. look for
+   + http://127.0.0.1:6060/debug/pprof/
+   + http://127.0.0.1:6060/debug/requests
+   + http://127.0.0.1:6060/debug/events
+1. micro debug interface
+   + micro call go.micro.srv.sims Debug.Health
+   + micro call go.micro.srv.sims Debug.Stats
+   + micro call go.micro.srv.sims Debug.Cache
