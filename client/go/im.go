@@ -21,18 +21,13 @@ type Client struct {
 
 	subscribeCtx context.Context
 	cancel       context.CancelFunc
+	conn         *grpc.ClientConn
 }
 
 // Publish TODO
 func (c *Client) Publish(toUserID, text string) error {
-	conn, err := grpc.DialContext(context.TODO(), c.Target, grpc.WithInsecure())
-	if err != nil {
-		return fmt.Errorf("grpc dial: %w", err)
-	}
-	defer conn.Close()
-
-	node := proto.NewPublisherClient(conn)
-	_, err = node.Publish(context.TODO(), &proto.PublishRequest{
+	node := proto.NewPublisherClient(c.conn)
+	_, err := node.Publish(context.TODO(), &proto.PublishRequest{
 		UserId: toUserID,
 		Event: &proto.Event{
 			Type: proto.EventType_EVT_TEXT,
@@ -66,6 +61,7 @@ func (c *Client) SubscribeEvent(ctx context.Context, callback func(*proto.Event)
 	if err != nil {
 		return fmt.Errorf("grpc dial: %w", err)
 	}
+	c.conn = conn
 	defer conn.Close()
 
 	node := proto.NewIMNodeClient(conn)
@@ -97,7 +93,7 @@ func (c *Client) SubscribeEvent(ctx context.Context, callback func(*proto.Event)
 			UserId:    c.UserID,
 			RequestId: strconv.FormatInt(time.Now().Unix(), 10),
 		}
-		outgoingCtx := metadata.NewOutgoingContext(ctx, headerToMetadata(header))
+		outgoingCtx := metadata.NewOutgoingContext(context.Background(), headerToMetadata(header))
 		stream, err := node.EventStream(outgoingCtx, &proto.EventStreamRequest{})
 		if err != nil {
 			errEvent <- err
@@ -139,13 +135,12 @@ func (c *Client) Close() error {
 			c.cancel()
 		}
 	}()
-	conn, err := grpc.DialContext(context.TODO(), c.Target, grpc.WithInsecure())
-	if err != nil {
-		return fmt.Errorf("grpc dial: %w", err)
-	}
-	defer conn.Close()
 
-	node := proto.NewIMNodeClient(conn)
+	if c.conn == nil {
+		return nil
+	}
+
+	node := proto.NewIMNodeClient(c.conn)
 	header := &proto.Header{
 		UserId: c.UserID,
 	}

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	im "github.com/aclisp/sims/client/go"
 	proto "github.com/aclisp/sims/proto/go"
@@ -22,4 +23,5 @@ func main() {
 	signal.Notify(term, os.Interrupt, syscall.SIGTERM)
 	<-term
 	client.Close()
+	time.Sleep(time.Second)
 }

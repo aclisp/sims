@@ -1,12 +1,16 @@
 Simple IM Server
 ---
 
-* [ ] Vendor go-micro and micro
-* [ ] Pure golang grpc client, is it necessary?
+* [x] Vendor go-micro and micro
+* [x] Pure golang grpc client, is it necessary?
   + No, you don't
   + Services are exposed via `api` using HTTP
-  + Add another API gateway as grpc reverse proxy
-* [ ] Simplified proto naming
+  + Add another API gateway as grpc reverse proxy (no need)
+  + SIMS can be started with bind address
+* [x] Simplified proto naming
+* [x] Reliable publishing: error correct and tracable
+* [ ] Real world deployment
+* [ ] Performance testing
 
 Directory Layout
 ---
