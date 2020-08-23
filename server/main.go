@@ -172,21 +172,13 @@ func (reg *Registrar) EventStream(ctx context.Context, req *proto.EventStreamReq
 	if events == nil {
 		return errorNotRegistered(uid)
 	}
-	errch := make(chan error)
 	// handle event
-	go func() {
-		logger.Infof("[%v %v] handling events", uid, trace)
-		for event := range events {
-			if err := stream.Send(event); err != nil {
-				errch <- err
-				return
-			}
+	logger.Infof("[%v %v] handling events", uid, trace)
+	for event := range events {
+		if err := stream.Send(event); err != nil {
+			logger.Errorf("[%v %v] send event to stream error: %v", uid, trace, err)
+			return err
 		}
-		close(errch)
-	}()
-	if err, ok := <-errch; ok {
-		logger.Errorf("[%v %v] send event to stream error: %v", uid, trace, err)
-		return err
 	}
 	logger.Infof("[%v %v] no more events", uid, trace)
 	return nil

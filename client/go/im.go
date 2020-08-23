@@ -52,6 +52,7 @@ func (c *Client) Subscribe(callback func(*proto.Event)) {
 				break
 			}
 		}
+		log.Println("subscribe done")
 	}()
 }
 
