@@ -1,5 +1,3 @@
-bin/
-
 !tools/bin/
 tools/bin/*
 !tools/bin/*.version

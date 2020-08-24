@@ -18,6 +18,12 @@ all:
 	cd server && go build -o ../bin; cd ..
 	cd pub && go build -o ../bin; cd ..
 
+.PHONY: linux
+linux:
+	cd server && \
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../bin/sims; \
+	cd ..
+
 .PHONY: proto
 proto:
 	protoc --proto_path=${PROTO} \
