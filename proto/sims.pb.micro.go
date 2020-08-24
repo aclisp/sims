@@ -33,37 +33,37 @@ var _ context.Context
 var _ client.Option
 var _ server.Option
 
-// Api Endpoints for IMNode service
+// Api Endpoints for Hub service
 
-func NewIMNodeEndpoints() []*api.Endpoint {
+func NewHubEndpoints() []*api.Endpoint {
 	return []*api.Endpoint{}
 }
 
-// Client API for IMNode service
+// Client API for Hub service
 
-type IMNodeService interface {
-	Register(ctx context.Context, in *RegisterRequest, opts ...client.CallOption) (*RegisterResponse, error)
+type HubService interface {
+	Connect(ctx context.Context, in *ConnectRequest, opts ...client.CallOption) (*ConnectResponse, error)
 	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...client.CallOption) (*HeartbeatResponse, error)
-	EventStream(ctx context.Context, in *EventStreamRequest, opts ...client.CallOption) (IMNode_EventStreamService, error)
-	Unregister(ctx context.Context, in *UnregisterRequest, opts ...client.CallOption) (*UnregisterResponse, error)
+	Events(ctx context.Context, in *EventsRequest, opts ...client.CallOption) (Hub_EventsService, error)
+	Disconnect(ctx context.Context, in *DisconnectRequest, opts ...client.CallOption) (*DisconnectResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...client.CallOption) (*ListResponse, error)
 }
 
-type iMNodeService struct {
+type hubService struct {
 	c    client.Client
 	name string
 }
 
-func NewIMNodeService(name string, c client.Client) IMNodeService {
-	return &iMNodeService{
+func NewHubService(name string, c client.Client) HubService {
+	return &hubService{
 		c:    c,
 		name: name,
 	}
 }
 
-func (c *iMNodeService) Register(ctx context.Context, in *RegisterRequest, opts ...client.CallOption) (*RegisterResponse, error) {
-	req := c.c.NewRequest(c.name, "IMNode.Register", in)
-	out := new(RegisterResponse)
+func (c *hubService) Connect(ctx context.Context, in *ConnectRequest, opts ...client.CallOption) (*ConnectResponse, error) {
+	req := c.c.NewRequest(c.name, "Hub.Connect", in)
+	out := new(ConnectResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -71,8 +71,8 @@ func (c *iMNodeService) Register(ctx context.Context, in *RegisterRequest, opts 
 	return out, nil
 }
 
-func (c *iMNodeService) Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...client.CallOption) (*HeartbeatResponse, error) {
-	req := c.c.NewRequest(c.name, "IMNode.Heartbeat", in)
+func (c *hubService) Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...client.CallOption) (*HeartbeatResponse, error) {
+	req := c.c.NewRequest(c.name, "Hub.Heartbeat", in)
 	out := new(HeartbeatResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -81,8 +81,8 @@ func (c *iMNodeService) Heartbeat(ctx context.Context, in *HeartbeatRequest, opt
 	return out, nil
 }
 
-func (c *iMNodeService) EventStream(ctx context.Context, in *EventStreamRequest, opts ...client.CallOption) (IMNode_EventStreamService, error) {
-	req := c.c.NewRequest(c.name, "IMNode.EventStream", &EventStreamRequest{})
+func (c *hubService) Events(ctx context.Context, in *EventsRequest, opts ...client.CallOption) (Hub_EventsService, error) {
+	req := c.c.NewRequest(c.name, "Hub.Events", &EventsRequest{})
 	stream, err := c.c.Stream(ctx, req, opts...)
 	if err != nil {
 		return nil, err
@@ -90,10 +90,10 @@ func (c *iMNodeService) EventStream(ctx context.Context, in *EventStreamRequest,
 	if err := stream.Send(in); err != nil {
 		return nil, err
 	}
-	return &iMNodeServiceEventStream{stream}, nil
+	return &hubServiceEvents{stream}, nil
 }
 
-type IMNode_EventStreamService interface {
+type Hub_EventsService interface {
 	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
@@ -101,27 +101,27 @@ type IMNode_EventStreamService interface {
 	Recv() (*Event, error)
 }
 
-type iMNodeServiceEventStream struct {
+type hubServiceEvents struct {
 	stream client.Stream
 }
 
-func (x *iMNodeServiceEventStream) Close() error {
+func (x *hubServiceEvents) Close() error {
 	return x.stream.Close()
 }
 
-func (x *iMNodeServiceEventStream) Context() context.Context {
+func (x *hubServiceEvents) Context() context.Context {
 	return x.stream.Context()
 }
 
-func (x *iMNodeServiceEventStream) SendMsg(m interface{}) error {
+func (x *hubServiceEvents) SendMsg(m interface{}) error {
 	return x.stream.Send(m)
 }
 
-func (x *iMNodeServiceEventStream) RecvMsg(m interface{}) error {
+func (x *hubServiceEvents) RecvMsg(m interface{}) error {
 	return x.stream.Recv(m)
 }
 
-func (x *iMNodeServiceEventStream) Recv() (*Event, error) {
+func (x *hubServiceEvents) Recv() (*Event, error) {
 	m := new(Event)
 	err := x.stream.Recv(m)
 	if err != nil {
@@ -130,9 +130,9 @@ func (x *iMNodeServiceEventStream) Recv() (*Event, error) {
 	return m, nil
 }
 
-func (c *iMNodeService) Unregister(ctx context.Context, in *UnregisterRequest, opts ...client.CallOption) (*UnregisterResponse, error) {
-	req := c.c.NewRequest(c.name, "IMNode.Unregister", in)
-	out := new(UnregisterResponse)
+func (c *hubService) Disconnect(ctx context.Context, in *DisconnectRequest, opts ...client.CallOption) (*DisconnectResponse, error) {
+	req := c.c.NewRequest(c.name, "Hub.Disconnect", in)
+	out := new(DisconnectResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -140,8 +140,8 @@ func (c *iMNodeService) Unregister(ctx context.Context, in *UnregisterRequest, o
 	return out, nil
 }
 
-func (c *iMNodeService) List(ctx context.Context, in *ListRequest, opts ...client.CallOption) (*ListResponse, error) {
-	req := c.c.NewRequest(c.name, "IMNode.List", in)
+func (c *hubService) List(ctx context.Context, in *ListRequest, opts ...client.CallOption) (*ListResponse, error) {
+	req := c.c.NewRequest(c.name, "Hub.List", in)
 	out := new(ListResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -150,52 +150,52 @@ func (c *iMNodeService) List(ctx context.Context, in *ListRequest, opts ...clien
 	return out, nil
 }
 
-// Server API for IMNode service
+// Server API for Hub service
 
-type IMNodeHandler interface {
-	Register(context.Context, *RegisterRequest, *RegisterResponse) error
+type HubHandler interface {
+	Connect(context.Context, *ConnectRequest, *ConnectResponse) error
 	Heartbeat(context.Context, *HeartbeatRequest, *HeartbeatResponse) error
-	EventStream(context.Context, *EventStreamRequest, IMNode_EventStreamStream) error
-	Unregister(context.Context, *UnregisterRequest, *UnregisterResponse) error
+	Events(context.Context, *EventsRequest, Hub_EventsStream) error
+	Disconnect(context.Context, *DisconnectRequest, *DisconnectResponse) error
 	List(context.Context, *ListRequest, *ListResponse) error
 }
 
-func RegisterIMNodeHandler(s server.Server, hdlr IMNodeHandler, opts ...server.HandlerOption) error {
-	type iMNode interface {
-		Register(ctx context.Context, in *RegisterRequest, out *RegisterResponse) error
+func RegisterHubHandler(s server.Server, hdlr HubHandler, opts ...server.HandlerOption) error {
+	type hub interface {
+		Connect(ctx context.Context, in *ConnectRequest, out *ConnectResponse) error
 		Heartbeat(ctx context.Context, in *HeartbeatRequest, out *HeartbeatResponse) error
-		EventStream(ctx context.Context, stream server.Stream) error
-		Unregister(ctx context.Context, in *UnregisterRequest, out *UnregisterResponse) error
+		Events(ctx context.Context, stream server.Stream) error
+		Disconnect(ctx context.Context, in *DisconnectRequest, out *DisconnectResponse) error
 		List(ctx context.Context, in *ListRequest, out *ListResponse) error
 	}
-	type IMNode struct {
-		iMNode
+	type Hub struct {
+		hub
 	}
-	h := &iMNodeHandler{hdlr}
-	return s.Handle(s.NewHandler(&IMNode{h}, opts...))
+	h := &hubHandler{hdlr}
+	return s.Handle(s.NewHandler(&Hub{h}, opts...))
 }
 
-type iMNodeHandler struct {
-	IMNodeHandler
+type hubHandler struct {
+	HubHandler
 }
 
-func (h *iMNodeHandler) Register(ctx context.Context, in *RegisterRequest, out *RegisterResponse) error {
-	return h.IMNodeHandler.Register(ctx, in, out)
+func (h *hubHandler) Connect(ctx context.Context, in *ConnectRequest, out *ConnectResponse) error {
+	return h.HubHandler.Connect(ctx, in, out)
 }
 
-func (h *iMNodeHandler) Heartbeat(ctx context.Context, in *HeartbeatRequest, out *HeartbeatResponse) error {
-	return h.IMNodeHandler.Heartbeat(ctx, in, out)
+func (h *hubHandler) Heartbeat(ctx context.Context, in *HeartbeatRequest, out *HeartbeatResponse) error {
+	return h.HubHandler.Heartbeat(ctx, in, out)
 }
 
-func (h *iMNodeHandler) EventStream(ctx context.Context, stream server.Stream) error {
-	m := new(EventStreamRequest)
+func (h *hubHandler) Events(ctx context.Context, stream server.Stream) error {
+	m := new(EventsRequest)
 	if err := stream.Recv(m); err != nil {
 		return err
 	}
-	return h.IMNodeHandler.EventStream(ctx, m, &iMNodeEventStreamStream{stream})
+	return h.HubHandler.Events(ctx, m, &hubEventsStream{stream})
 }
 
-type IMNode_EventStreamStream interface {
+type Hub_EventsStream interface {
 	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
@@ -203,36 +203,36 @@ type IMNode_EventStreamStream interface {
 	Send(*Event) error
 }
 
-type iMNodeEventStreamStream struct {
+type hubEventsStream struct {
 	stream server.Stream
 }
 
-func (x *iMNodeEventStreamStream) Close() error {
+func (x *hubEventsStream) Close() error {
 	return x.stream.Close()
 }
 
-func (x *iMNodeEventStreamStream) Context() context.Context {
+func (x *hubEventsStream) Context() context.Context {
 	return x.stream.Context()
 }
 
-func (x *iMNodeEventStreamStream) SendMsg(m interface{}) error {
+func (x *hubEventsStream) SendMsg(m interface{}) error {
 	return x.stream.Send(m)
 }
 
-func (x *iMNodeEventStreamStream) RecvMsg(m interface{}) error {
+func (x *hubEventsStream) RecvMsg(m interface{}) error {
 	return x.stream.Recv(m)
 }
 
-func (x *iMNodeEventStreamStream) Send(m *Event) error {
+func (x *hubEventsStream) Send(m *Event) error {
 	return x.stream.Send(m)
 }
 
-func (h *iMNodeHandler) Unregister(ctx context.Context, in *UnregisterRequest, out *UnregisterResponse) error {
-	return h.IMNodeHandler.Unregister(ctx, in, out)
+func (h *hubHandler) Disconnect(ctx context.Context, in *DisconnectRequest, out *DisconnectResponse) error {
+	return h.HubHandler.Disconnect(ctx, in, out)
 }
 
-func (h *iMNodeHandler) List(ctx context.Context, in *ListRequest, out *ListResponse) error {
-	return h.IMNodeHandler.List(ctx, in, out)
+func (h *hubHandler) List(ctx context.Context, in *ListRequest, out *ListResponse) error {
+	return h.HubHandler.List(ctx, in, out)
 }
 
 // Api Endpoints for Publisher service

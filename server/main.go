@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	_ "net/http/pprof"
 	"sort"
@@ -14,7 +13,6 @@ import (
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/errors"
 	"github.com/micro/go-micro/v2/logger"
-	"github.com/micro/go-micro/v2/metadata"
 	"google.golang.org/grpc"
 )
 
@@ -135,9 +133,7 @@ func (reg *Registrar) deleteEventQueue(uid UniqueID) {
 
 // Heartbeat TODO
 func (reg *Registrar) Heartbeat(ctx context.Context, req *proto.HeartbeatRequest, res *proto.HeartbeatResponse) error {
-	md, _ := metadata.FromContext(ctx)
-	header := metadataToHeader(md)
-	uid, err := uniqueIDFromHeader(header)
+	uid, err := uniqueIDFromHeader(req.Header)
 	if err != nil {
 		return err
 	}
@@ -158,13 +154,11 @@ func (reg *Registrar) Heartbeat(ctx context.Context, req *proto.HeartbeatRequest
 	return nil
 }
 
-// EventStream TODO
-func (reg *Registrar) EventStream(ctx context.Context, req *proto.EventStreamRequest, stream proto.IMNode_EventStreamStream) error {
-	md, _ := metadata.FromContext(ctx)
-	header := metadataToHeader(md)
-	trace := header.RequestId
+// Events TODO
+func (reg *Registrar) Events(ctx context.Context, req *proto.EventsRequest, stream proto.Hub_EventsStream) error {
+	trace := req.GetHeader().GetRequestId()
 	// get notice message queue by user
-	uid, err := uniqueIDFromHeader(header)
+	uid, err := uniqueIDFromHeader(req.Header)
 	if err != nil {
 		return err
 	}
@@ -184,12 +178,10 @@ func (reg *Registrar) EventStream(ctx context.Context, req *proto.EventStreamReq
 	return nil
 }
 
-// Register TODO
-func (reg *Registrar) Register(ctx context.Context, req *proto.RegisterRequest, res *proto.RegisterResponse) error {
-	md, _ := metadata.FromContext(ctx)
-	header := metadataToHeader(md)
+// Connect TODO
+func (reg *Registrar) Connect(ctx context.Context, req *proto.ConnectRequest, res *proto.ConnectResponse) error {
 	// local
-	uid, err := uniqueIDFromHeader(header)
+	uid, err := uniqueIDFromHeader(req.Header)
 	if err != nil {
 		return err
 	}
@@ -198,11 +190,9 @@ func (reg *Registrar) Register(ctx context.Context, req *proto.RegisterRequest, 
 	return nil
 }
 
-// Unregister TODO
-func (reg *Registrar) Unregister(ctx context.Context, req *proto.UnregisterRequest, res *proto.UnregisterResponse) error {
-	md, _ := metadata.FromContext(ctx)
-	header := metadataToHeader(md)
-	uid, err := uniqueIDFromHeader(header)
+// Disconnect TODO
+func (reg *Registrar) Disconnect(ctx context.Context, req *proto.DisconnectRequest, res *proto.DisconnectResponse) error {
+	uid, err := uniqueIDFromHeader(req.Header)
 	if err != nil {
 		return err
 	}
@@ -267,7 +257,7 @@ func main() {
 
 	service.Init()
 
-	proto.RegisterIMNodeHandler(service.Server(), gRegistrar)
+	proto.RegisterHubHandler(service.Server(), gRegistrar)
 	proto.RegisterPublisherHandler(service.Server(), new(Publisher))
 
 	logger.Info("run")
@@ -299,13 +289,6 @@ func uniqueIDFromHeader(header *proto.Header) (UniqueID, error) {
 	return UniqueID{
 		UserID: userID,
 	}, nil
-}
-
-func metadataToHeader(md metadata.Metadata) *proto.Header {
-	header := &proto.Header{}
-	buf, _ := json.Marshal(md)
-	json.Unmarshal(buf, header)
-	return header
 }
 
 func errorNotRegistered(uid UniqueID) error {

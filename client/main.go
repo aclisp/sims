@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"os"
 	"os/signal"
@@ -13,15 +12,7 @@ import (
 	"github.com/aclisp/sims/proto"
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/logger"
-	"github.com/micro/go-micro/v2/metadata"
 )
-
-func headerToMetadata(header *proto.Header) metadata.Metadata {
-	var md metadata.Metadata
-	buf, _ := json.Marshal(header)
-	json.Unmarshal(buf, &md)
-	return md
-}
 
 func main() {
 	userID := os.Getenv("USER_ID")
@@ -31,18 +22,22 @@ func main() {
 	header := &proto.Header{
 		UserId: userID,
 	}
-	ctx := metadata.NewContext(context.Background(), headerToMetadata(header))
+	ctx := context.Background()
 	service := micro.NewService()
-	cl := proto.NewIMNodeService("go.micro.srv.sims", service.Client())
+	cl := proto.NewHubService("go.micro.srv.sims", service.Client())
 
-	_, err := cl.Register(ctx, &proto.RegisterRequest{})
+	_, err := cl.Connect(ctx, &proto.ConnectRequest{
+		Header: header,
+	})
 	if err != nil {
 		logger.Fatalf("register error: %v", err)
 	}
 
 	go func() {
 		for range time.Tick(5 * time.Second) {
-			_, err := cl.Heartbeat(ctx, &proto.HeartbeatRequest{})
+			_, err := cl.Heartbeat(ctx, &proto.HeartbeatRequest{
+				Header: header,
+			})
 			if err != nil {
 				logger.Fatalf("heartbeat error: %v", err)
 			}
@@ -53,12 +48,15 @@ func main() {
 	signal.Notify(term, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-term
-		cl.Unregister(ctx, &proto.UnregisterRequest{})
+		cl.Disconnect(ctx, &proto.DisconnectRequest{
+			Header: header,
+		})
 	}()
 
 	header.RequestId = strconv.FormatInt(time.Now().Unix(), 10)
-	ctx = metadata.NewContext(context.Background(), headerToMetadata(header))
-	stream, err := cl.EventStream(ctx, &proto.EventStreamRequest{})
+	stream, err := cl.Events(ctx, &proto.EventsRequest{
+		Header: header,
+	})
 	if err != nil {
 		logger.Fatalf("start event stream error: %v", err)
 	}

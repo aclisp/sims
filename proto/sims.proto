@@ -40,11 +40,11 @@ message Event {
     bytes data = 2;
 }
 
-service IMNode {
-    rpc Register (RegisterRequest) returns (RegisterResponse);
+service Hub {
+    rpc Connect (ConnectRequest) returns (ConnectResponse);
     rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse);
-    rpc EventStream (EventStreamRequest) returns (stream Event);
-    rpc Unregister (UnregisterRequest) returns (UnregisterResponse);
+    rpc Events (EventsRequest) returns (stream Event);
+    rpc Disconnect (DisconnectRequest) returns (DisconnectResponse);
     rpc List (ListRequest) returns (ListResponse);
 }
 
@@ -56,19 +56,22 @@ service Subscriber {
     rpc Subscribe (SubscribeRequest) returns (SubscribeResponse);
 }
 
-message EventStreamRequest {
+message EventsRequest {
+    Header header = 1;
 }
 
-message RegisterRequest {
+message ConnectRequest {
+    Header header = 1;
 }
 
-message RegisterResponse {
+message ConnectResponse {
 }
 
-message UnregisterRequest {
+message DisconnectRequest {
+    Header header = 1;
 }
 
-message UnregisterResponse {
+message DisconnectResponse {
 }
 
 message PublishRequest {
@@ -86,6 +89,7 @@ message SubscribeResponse {
 }
 
 message HeartbeatRequest {
+    Header header = 1;
 }
 
 message HeartbeatResponse {
