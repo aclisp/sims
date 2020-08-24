@@ -30,6 +30,7 @@ Directory Layout
 * `proto/` protobuf definitions
 * `pub/` event publisher
 * `server/` the sims server
+* `micro/` the micro cli (modified)
 * `tools/` dependent tools
   + `bin` protoc-gen-go protoc-gen-micro micro
 
