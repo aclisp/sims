@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>A static page</title>
+</head>
+<body>
+<h1>Hello from a static page</h1>
+<div id="messages">
+    <h4>Events</h4>
+</div>
+<script>
+    const target = '127.0.0.1:8080/sims/hub'
+    const sims_api = 'http://' + target
+    const sims_ws = 'ws://' + target
+    const sims_connect = sims_api + '/connect'
+    const sims_heartbeat = sims_api + '/heartbeat'
+    const sims_events = sims_ws + '/events'
+    const user_id = 'homerhuang'
+    const body = JSON.stringify({
+        header: {
+            user_id: user_id
+        }
+    })
+    fetch(sims_connect, {
+        method: 'POST',
+        body: body
+    }).then(response => response.json()).then(data => {
+        subscribeEvent()
+    })
+
+    function heartbeat() {
+        fetch(sims_heartbeat, {
+            method: 'POST',
+            body: body
+        }).then(response => response.json()).then(data => {
+        })
+    }
+
+    function subscribeEvent() {
+        const body = JSON.stringify({
+            header: {
+                user_id: user_id,
+                request_id: Math.floor(Date.now() / 1000).toString()
+            }
+        })
+        const stream = new WebSocket(sims_events)
+        let beat = 0
+        stream.onmessage = ev => {
+            if (ev.data === '{}') return
+            const event = JSON.parse(ev.data)
+            const msg = atob(event.data)
+            console.log(event.type, msg)
+            window.messages.innerHTML += `<p>${msg}</p>`
+        }
+        stream.onopen = () => {
+            stream.send(body)
+            beat = setInterval(heartbeat, 5000)
+        }
+        stream.onerror = ev => {
+            console.log(ev)
+            clearInterval(beat)
+        }
+        stream.onclose = ev => {
+            console.log(ev)
+            clearInterval(beat)
+        }
+    }
+</script>
+</body>
+</html>

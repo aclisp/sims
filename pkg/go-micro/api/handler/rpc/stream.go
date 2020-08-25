@@ -87,6 +87,14 @@ func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request,
 		}
 	}()
 
+	payload, op, err = wsutil.ReadClientData(rw)
+	if err != nil {
+		if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
+			logger.Error(err)
+		}
+		return
+	}
+
 	var request interface{}
 	if !bytes.Equal(payload, []byte(`{}`)) {
 		switch ct {
