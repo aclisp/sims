@@ -44,13 +44,12 @@ func NewRegistrar() *Registrar {
 
 // ListChannels TODO
 func (reg *Registrar) ListChannels() []*proto.Channel {
-	reg.lock.Lock()
-	defer reg.lock.Unlock()
-
 	type ch struct {
 		UniqueID
 		*Channel
 	}
+
+	reg.lock.Lock()
 	ca := make([]ch, 0, len(reg.channels))
 	for uid, channel := range reg.channels {
 		ca = append(ca, ch{
@@ -58,6 +57,8 @@ func (reg *Registrar) ListChannels() []*proto.Channel {
 			Channel:  channel,
 		})
 	}
+	reg.lock.Unlock()
+
 	sort.Slice(ca, func(i, j int) bool { return ca[i].LastHeartbeat.After(ca[j].LastHeartbeat) })
 
 	cb := make([]*proto.Channel, len(ca))
