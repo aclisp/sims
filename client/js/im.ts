@@ -96,10 +96,14 @@ export default class EventStream {
                             `event stream websocket closed: ${ev.code} (clean=${ev.wasClean})`,
                         ),
                     );
+                    console.debug(
+                        `event stream websocket closed: ${ev.code} (clean=${ev.wasClean})`,
+                    );
                 };
                 ws.onerror = ev => {
                     window.clearInterval(beat);
                     onError(new Error(`event stream websocket error: ${ev}`));
+                    console.debug(`event stream websocket error: ${ev}`);
                 };
             })
             .catch(err => {

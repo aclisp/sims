@@ -156,6 +156,9 @@ func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request,
 				if strings.Contains(err.Error(), "context canceled") {
 					return
 				}
+				if err == io.EOF {
+					return
+				}
 				if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 					logger.Error(err)
 				}
@@ -200,6 +203,9 @@ func writeLoop(rw io.ReadWriter, stream client.Stream) {
 						// this happens when user close ws connection, or we don't get any status
 						return
 					}
+				}
+				if strings.Contains(err.Error(), "use of closed network connection") {
+					return
 				}
 				if logger.V(logger.ErrorLevel, logger.DefaultLogger) {
 					logger.Error(err)
