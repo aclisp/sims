@@ -36,3 +36,8 @@ protoc:
 	protoc --proto_path=${PROTO} \
 	--go_out=plugins=grpc:${PROTO}/go --go_opt=paths=source_relative \
 	${PROTO}/*.proto
+
+.PHONY: lint
+lint:
+	~/go/bin/golint server/... pub/... client/...
+	gofmt -l -w -s server pub client

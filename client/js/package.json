@@ -6,7 +6,7 @@
     "module": "./dist/reconnecting-websocket-mjs.js",
     "types": "./dist/reconnecting-websocket.d.ts",
     "scripts": {
-        "build": "npm run clean && rollup -c && uglifyjs --compress --mangle -o dist/reconnecting-websocket-iife.min.js dist/reconnecting-websocket-iife.js",
+        "build": "npm run clean && rollup -c && uglifyjs --compress --mangle -o dist/im.min.js dist/im.js",
         "test": "jest --coverage",
         "clean": "del dist && del coverage && del .nyc_output",
         "report": "nyc report --reporter=html && opn coverage/index.html",
