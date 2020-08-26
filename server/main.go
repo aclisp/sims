@@ -13,6 +13,7 @@ import (
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/errors"
 	"github.com/micro/go-micro/v2/logger"
+	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 )
 
@@ -25,6 +26,7 @@ type Channel struct {
 	EventQueue    chan *proto.Event
 	Birth         time.Time
 	LastHeartbeat time.Time
+	Active        atomic.Uint32
 }
 
 // Registrar TODO
@@ -64,6 +66,7 @@ func (reg *Registrar) ListChannels() []*proto.Channel {
 			UserId:        ca[i].UserID,
 			Birth:         ca[i].Birth.Format(time.RFC3339),
 			LastHeartbeat: ca[i].LastHeartbeat.Format(time.RFC3339),
+			Active:        int32(ca[i].Active.Load()),
 		}
 	}
 	return cb
@@ -98,6 +101,12 @@ func (reg *Registrar) findEventQueue(uid UniqueID) chan *proto.Event {
 		return channel.EventQueue
 	}
 	return nil
+}
+
+func (reg *Registrar) findChannel(uid UniqueID) *Channel {
+	reg.lock.Lock()
+	defer reg.lock.Unlock()
+	return reg.channels[uid]
 }
 
 func (reg *Registrar) heartbeat(uid UniqueID) {
@@ -162,13 +171,17 @@ func (reg *Registrar) Events(ctx context.Context, req *proto.EventsRequest, stre
 	if err != nil {
 		return err
 	}
-	events := reg.findEventQueue(uid)
-	if events == nil {
+
+	channel := reg.findChannel(uid)
+	if channel == nil {
 		return errorNotRegistered(uid)
 	}
+	channel.Active.Inc()
+	defer channel.Active.Dec()
+
 	// handle event
 	logger.Infof("[%v %v] handling events", uid, trace)
-	for event := range events {
+	for event := range channel.EventQueue {
 		if err := stream.Send(event); err != nil {
 			logger.Errorf("[%v %v] send event to stream error: %v", uid, trace, err)
 			return err

@@ -14,16 +14,17 @@
 <script src="./dist/im.js"></script>
 <script>
     const stream = new EventStream('127.0.0.1:8080', 'homerhuang')
+
     function subscribe() {
         stream.subscribe(event => {
             console.log(event.type, event.data)
             window.messages.innerHTML += `<p>${event.data}</p>`
         })
     }
+
     function stop() {
         stream.close()
     }
-
 </script>
 </body>
 </html>

@@ -103,6 +103,7 @@ message Channel {
     string device_id = 2;
     string birth = 3;
     string last_heartbeat = 4;
+    int32 active = 5;
 }
 
 message ListResponse {
