@@ -44,7 +44,6 @@ func NewHubEndpoints() []*api.Endpoint {
 type HubService interface {
 	Connect(ctx context.Context, in *ConnectRequest, opts ...client.CallOption) (*ConnectResponse, error)
 	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...client.CallOption) (*HeartbeatResponse, error)
-	Events(ctx context.Context, in *EventsRequest, opts ...client.CallOption) (Hub_EventsService, error)
 	Disconnect(ctx context.Context, in *DisconnectRequest, opts ...client.CallOption) (*DisconnectResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...client.CallOption) (*ListResponse, error)
 }
@@ -81,55 +80,6 @@ func (c *hubService) Heartbeat(ctx context.Context, in *HeartbeatRequest, opts .
 	return out, nil
 }
 
-func (c *hubService) Events(ctx context.Context, in *EventsRequest, opts ...client.CallOption) (Hub_EventsService, error) {
-	req := c.c.NewRequest(c.name, "Hub.Events", &EventsRequest{})
-	stream, err := c.c.Stream(ctx, req, opts...)
-	if err != nil {
-		return nil, err
-	}
-	if err := stream.Send(in); err != nil {
-		return nil, err
-	}
-	return &hubServiceEvents{stream}, nil
-}
-
-type Hub_EventsService interface {
-	Context() context.Context
-	SendMsg(interface{}) error
-	RecvMsg(interface{}) error
-	Close() error
-	Recv() (*Event, error)
-}
-
-type hubServiceEvents struct {
-	stream client.Stream
-}
-
-func (x *hubServiceEvents) Close() error {
-	return x.stream.Close()
-}
-
-func (x *hubServiceEvents) Context() context.Context {
-	return x.stream.Context()
-}
-
-func (x *hubServiceEvents) SendMsg(m interface{}) error {
-	return x.stream.Send(m)
-}
-
-func (x *hubServiceEvents) RecvMsg(m interface{}) error {
-	return x.stream.Recv(m)
-}
-
-func (x *hubServiceEvents) Recv() (*Event, error) {
-	m := new(Event)
-	err := x.stream.Recv(m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func (c *hubService) Disconnect(ctx context.Context, in *DisconnectRequest, opts ...client.CallOption) (*DisconnectResponse, error) {
 	req := c.c.NewRequest(c.name, "Hub.Disconnect", in)
 	out := new(DisconnectResponse)
@@ -155,7 +105,6 @@ func (c *hubService) List(ctx context.Context, in *ListRequest, opts ...client.C
 type HubHandler interface {
 	Connect(context.Context, *ConnectRequest, *ConnectResponse) error
 	Heartbeat(context.Context, *HeartbeatRequest, *HeartbeatResponse) error
-	Events(context.Context, *EventsRequest, Hub_EventsStream) error
 	Disconnect(context.Context, *DisconnectRequest, *DisconnectResponse) error
 	List(context.Context, *ListRequest, *ListResponse) error
 }
@@ -164,7 +113,6 @@ func RegisterHubHandler(s server.Server, hdlr HubHandler, opts ...server.Handler
 	type hub interface {
 		Connect(ctx context.Context, in *ConnectRequest, out *ConnectResponse) error
 		Heartbeat(ctx context.Context, in *HeartbeatRequest, out *HeartbeatResponse) error
-		Events(ctx context.Context, stream server.Stream) error
 		Disconnect(ctx context.Context, in *DisconnectRequest, out *DisconnectResponse) error
 		List(ctx context.Context, in *ListRequest, out *ListResponse) error
 	}
@@ -187,15 +135,117 @@ func (h *hubHandler) Heartbeat(ctx context.Context, in *HeartbeatRequest, out *H
 	return h.HubHandler.Heartbeat(ctx, in, out)
 }
 
-func (h *hubHandler) Events(ctx context.Context, stream server.Stream) error {
+func (h *hubHandler) Disconnect(ctx context.Context, in *DisconnectRequest, out *DisconnectResponse) error {
+	return h.HubHandler.Disconnect(ctx, in, out)
+}
+
+func (h *hubHandler) List(ctx context.Context, in *ListRequest, out *ListResponse) error {
+	return h.HubHandler.List(ctx, in, out)
+}
+
+// Api Endpoints for Streamer service
+
+func NewStreamerEndpoints() []*api.Endpoint {
+	return []*api.Endpoint{}
+}
+
+// Client API for Streamer service
+
+type StreamerService interface {
+	Events(ctx context.Context, in *EventsRequest, opts ...client.CallOption) (Streamer_EventsService, error)
+}
+
+type streamerService struct {
+	c    client.Client
+	name string
+}
+
+func NewStreamerService(name string, c client.Client) StreamerService {
+	return &streamerService{
+		c:    c,
+		name: name,
+	}
+}
+
+func (c *streamerService) Events(ctx context.Context, in *EventsRequest, opts ...client.CallOption) (Streamer_EventsService, error) {
+	req := c.c.NewRequest(c.name, "Streamer.Events", &EventsRequest{})
+	stream, err := c.c.Stream(ctx, req, opts...)
+	if err != nil {
+		return nil, err
+	}
+	if err := stream.Send(in); err != nil {
+		return nil, err
+	}
+	return &streamerServiceEvents{stream}, nil
+}
+
+type Streamer_EventsService interface {
+	Context() context.Context
+	SendMsg(interface{}) error
+	RecvMsg(interface{}) error
+	Close() error
+	Recv() (*Event, error)
+}
+
+type streamerServiceEvents struct {
+	stream client.Stream
+}
+
+func (x *streamerServiceEvents) Close() error {
+	return x.stream.Close()
+}
+
+func (x *streamerServiceEvents) Context() context.Context {
+	return x.stream.Context()
+}
+
+func (x *streamerServiceEvents) SendMsg(m interface{}) error {
+	return x.stream.Send(m)
+}
+
+func (x *streamerServiceEvents) RecvMsg(m interface{}) error {
+	return x.stream.Recv(m)
+}
+
+func (x *streamerServiceEvents) Recv() (*Event, error) {
+	m := new(Event)
+	err := x.stream.Recv(m)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Server API for Streamer service
+
+type StreamerHandler interface {
+	Events(context.Context, *EventsRequest, Streamer_EventsStream) error
+}
+
+func RegisterStreamerHandler(s server.Server, hdlr StreamerHandler, opts ...server.HandlerOption) error {
+	type streamer interface {
+		Events(ctx context.Context, stream server.Stream) error
+	}
+	type Streamer struct {
+		streamer
+	}
+	h := &streamerHandler{hdlr}
+	return s.Handle(s.NewHandler(&Streamer{h}, opts...))
+}
+
+type streamerHandler struct {
+	StreamerHandler
+}
+
+func (h *streamerHandler) Events(ctx context.Context, stream server.Stream) error {
 	m := new(EventsRequest)
 	if err := stream.Recv(m); err != nil {
 		return err
 	}
-	return h.HubHandler.Events(ctx, m, &hubEventsStream{stream})
+	return h.StreamerHandler.Events(ctx, m, &streamerEventsStream{stream})
 }
 
-type Hub_EventsStream interface {
+type Streamer_EventsStream interface {
 	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
@@ -203,36 +253,28 @@ type Hub_EventsStream interface {
 	Send(*Event) error
 }
 
-type hubEventsStream struct {
+type streamerEventsStream struct {
 	stream server.Stream
 }
 
-func (x *hubEventsStream) Close() error {
+func (x *streamerEventsStream) Close() error {
 	return x.stream.Close()
 }
 
-func (x *hubEventsStream) Context() context.Context {
+func (x *streamerEventsStream) Context() context.Context {
 	return x.stream.Context()
 }
 
-func (x *hubEventsStream) SendMsg(m interface{}) error {
+func (x *streamerEventsStream) SendMsg(m interface{}) error {
 	return x.stream.Send(m)
 }
 
-func (x *hubEventsStream) RecvMsg(m interface{}) error {
+func (x *streamerEventsStream) RecvMsg(m interface{}) error {
 	return x.stream.Recv(m)
 }
 
-func (x *hubEventsStream) Send(m *Event) error {
+func (x *streamerEventsStream) Send(m *Event) error {
 	return x.stream.Send(m)
-}
-
-func (h *hubHandler) Disconnect(ctx context.Context, in *DisconnectRequest, out *DisconnectResponse) error {
-	return h.HubHandler.Disconnect(ctx, in, out)
-}
-
-func (h *hubHandler) List(ctx context.Context, in *ListRequest, out *ListResponse) error {
-	return h.HubHandler.List(ctx, in, out)
 }
 
 // Api Endpoints for Publisher service

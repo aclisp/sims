@@ -146,7 +146,7 @@ func (reg *Registrar) Heartbeat(ctx context.Context, req *proto.HeartbeatRequest
 }
 
 // Events TODO
-func (reg *Registrar) Events(ctx context.Context, req *proto.EventsRequest, stream proto.Hub_EventsStream) error {
+func (reg *Registrar) Events(ctx context.Context, req *proto.EventsRequest, stream proto.Streamer_EventsStream) error {
 	trace := req.GetHeader().GetRequestId()
 	// get notice message queue by user
 	uid, err := uniqueIDFromHeader(req.Header)

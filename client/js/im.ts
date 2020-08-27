@@ -71,7 +71,7 @@ export default class EventStream {
                 return response.json();
             })
             .then(() => {
-                ws = new WebSocket(`ws://${this.target}/sims/hub/events`);
+                ws = new WebSocket(`ws://${this.target}/sims/streamer/events`);
                 ws.onopen = () => {
                     ws.send(
                         JSON.stringify({

@@ -50,6 +50,7 @@ func main() {
 	service.Init()
 
 	proto.RegisterHubHandler(service.Server(), gRegistrar)
+	proto.RegisterStreamerHandler(service.Server(), gRegistrar)
 	proto.RegisterPublisherHandler(service.Server(), new(Publisher))
 
 	logger.Info("run")

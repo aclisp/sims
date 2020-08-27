@@ -44,9 +44,12 @@ message Selector {
 service Hub {
     rpc Connect (ConnectRequest) returns (ConnectResponse);
     rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse);
-    rpc Events (EventsRequest) returns (stream Event);
     rpc Disconnect (DisconnectRequest) returns (DisconnectResponse);
     rpc List (ListRequest) returns (ListResponse);
+}
+
+service Streamer {
+    rpc Events (EventsRequest) returns (stream Event);
 }
 
 service Publisher {

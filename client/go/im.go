@@ -63,12 +63,13 @@ func (c *Client) SubscribeEvent(ctx context.Context, callback func(*proto.Event)
 	c.conn = conn
 	defer conn.Close()
 
-	node := proto.NewHubClient(conn)
+	hub := proto.NewHubClient(conn)
+	streamer := proto.NewStreamerClient(conn)
 
 	header := &proto.Header{
 		UserId: c.UserID,
 	}
-	if _, err := node.Connect(ctx, &proto.ConnectRequest{
+	if _, err := hub.Connect(ctx, &proto.ConnectRequest{
 		Header: header,
 	}); err != nil {
 		return fmt.Errorf("node connect: %w", err)
@@ -78,7 +79,7 @@ func (c *Client) SubscribeEvent(ctx context.Context, callback func(*proto.Event)
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		for range ticker.C {
-			_, err := node.Heartbeat(ctx, &proto.HeartbeatRequest{
+			_, err := hub.Heartbeat(ctx, &proto.HeartbeatRequest{
 				Header: header,
 			})
 			if err != nil {
@@ -95,7 +96,7 @@ func (c *Client) SubscribeEvent(ctx context.Context, callback func(*proto.Event)
 			UserId:    c.UserID,
 			RequestId: strconv.FormatInt(time.Now().Unix(), 10),
 		}
-		stream, err := node.Events(context.Background(), &proto.EventsRequest{
+		stream, err := streamer.Events(context.Background(), &proto.EventsRequest{
 			Header: header,
 		})
 		if err != nil {
@@ -143,11 +144,11 @@ func (c *Client) Close() error {
 		return nil
 	}
 
-	node := proto.NewHubClient(c.conn)
+	hub := proto.NewHubClient(c.conn)
 	header := &proto.Header{
 		UserId: c.UserID,
 	}
-	if _, err := node.Disconnect(context.TODO(), &proto.DisconnectRequest{
+	if _, err := hub.Disconnect(context.TODO(), &proto.DisconnectRequest{
 		Header: header,
 	}); err != nil {
 		return fmt.Errorf("node disconnect: %w", err)

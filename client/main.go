@@ -14,6 +14,11 @@ import (
 	"github.com/micro/go-micro/v2/logger"
 )
 
+const (
+	// TargetServiceName is the target SIMS server
+	TargetServiceName = "go.micro.srv.sims"
+)
+
 func main() {
 	userID := os.Getenv("USER_ID")
 	if userID == "" {
@@ -24,9 +29,10 @@ func main() {
 	}
 	ctx := context.Background()
 	service := micro.NewService()
-	cl := proto.NewHubService("go.micro.srv.sims", service.Client())
+	hub := proto.NewHubService(TargetServiceName, service.Client())
+	streamer := proto.NewStreamerService(TargetServiceName, service.Client())
 
-	_, err := cl.Connect(ctx, &proto.ConnectRequest{
+	_, err := hub.Connect(ctx, &proto.ConnectRequest{
 		Header: header,
 	})
 	if err != nil {
@@ -35,7 +41,7 @@ func main() {
 
 	go func() {
 		for range time.Tick(5 * time.Second) {
-			_, err := cl.Heartbeat(ctx, &proto.HeartbeatRequest{
+			_, err := hub.Heartbeat(ctx, &proto.HeartbeatRequest{
 				Header: header,
 			})
 			if err != nil {
@@ -48,13 +54,13 @@ func main() {
 	signal.Notify(term, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-term
-		cl.Disconnect(ctx, &proto.DisconnectRequest{
+		hub.Disconnect(ctx, &proto.DisconnectRequest{
 			Header: header,
 		})
 	}()
 
 	header.RequestId = strconv.FormatInt(time.Now().Unix(), 10)
-	stream, err := cl.Events(ctx, &proto.EventsRequest{
+	stream, err := streamer.Events(ctx, &proto.EventsRequest{
 		Header: header,
 	})
 	if err != nil {
