@@ -244,7 +244,8 @@ func NewPublisherEndpoints() []*api.Endpoint {
 // Client API for Publisher service
 
 type PublisherService interface {
-	Publish(ctx context.Context, in *PublishRequest, opts ...client.CallOption) (*PublishResponse, error)
+	Unicast(ctx context.Context, in *UnicastRequest, opts ...client.CallOption) (*UnicastResponse, error)
+	Multicast(ctx context.Context, in *MulticastRequest, opts ...client.CallOption) (*MulticastResponse, error)
 }
 
 type publisherService struct {
@@ -259,9 +260,19 @@ func NewPublisherService(name string, c client.Client) PublisherService {
 	}
 }
 
-func (c *publisherService) Publish(ctx context.Context, in *PublishRequest, opts ...client.CallOption) (*PublishResponse, error) {
-	req := c.c.NewRequest(c.name, "Publisher.Publish", in)
-	out := new(PublishResponse)
+func (c *publisherService) Unicast(ctx context.Context, in *UnicastRequest, opts ...client.CallOption) (*UnicastResponse, error) {
+	req := c.c.NewRequest(c.name, "Publisher.Unicast", in)
+	out := new(UnicastResponse)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *publisherService) Multicast(ctx context.Context, in *MulticastRequest, opts ...client.CallOption) (*MulticastResponse, error) {
+	req := c.c.NewRequest(c.name, "Publisher.Multicast", in)
+	out := new(MulticastResponse)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -272,12 +283,14 @@ func (c *publisherService) Publish(ctx context.Context, in *PublishRequest, opts
 // Server API for Publisher service
 
 type PublisherHandler interface {
-	Publish(context.Context, *PublishRequest, *PublishResponse) error
+	Unicast(context.Context, *UnicastRequest, *UnicastResponse) error
+	Multicast(context.Context, *MulticastRequest, *MulticastResponse) error
 }
 
 func RegisterPublisherHandler(s server.Server, hdlr PublisherHandler, opts ...server.HandlerOption) error {
 	type publisher interface {
-		Publish(ctx context.Context, in *PublishRequest, out *PublishResponse) error
+		Unicast(ctx context.Context, in *UnicastRequest, out *UnicastResponse) error
+		Multicast(ctx context.Context, in *MulticastRequest, out *MulticastResponse) error
 	}
 	type Publisher struct {
 		publisher
@@ -290,65 +303,10 @@ type publisherHandler struct {
 	PublisherHandler
 }
 
-func (h *publisherHandler) Publish(ctx context.Context, in *PublishRequest, out *PublishResponse) error {
-	return h.PublisherHandler.Publish(ctx, in, out)
+func (h *publisherHandler) Unicast(ctx context.Context, in *UnicastRequest, out *UnicastResponse) error {
+	return h.PublisherHandler.Unicast(ctx, in, out)
 }
 
-// Api Endpoints for Subscriber service
-
-func NewSubscriberEndpoints() []*api.Endpoint {
-	return []*api.Endpoint{}
-}
-
-// Client API for Subscriber service
-
-type SubscriberService interface {
-	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...client.CallOption) (*SubscribeResponse, error)
-}
-
-type subscriberService struct {
-	c    client.Client
-	name string
-}
-
-func NewSubscriberService(name string, c client.Client) SubscriberService {
-	return &subscriberService{
-		c:    c,
-		name: name,
-	}
-}
-
-func (c *subscriberService) Subscribe(ctx context.Context, in *SubscribeRequest, opts ...client.CallOption) (*SubscribeResponse, error) {
-	req := c.c.NewRequest(c.name, "Subscriber.Subscribe", in)
-	out := new(SubscribeResponse)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// Server API for Subscriber service
-
-type SubscriberHandler interface {
-	Subscribe(context.Context, *SubscribeRequest, *SubscribeResponse) error
-}
-
-func RegisterSubscriberHandler(s server.Server, hdlr SubscriberHandler, opts ...server.HandlerOption) error {
-	type subscriber interface {
-		Subscribe(ctx context.Context, in *SubscribeRequest, out *SubscribeResponse) error
-	}
-	type Subscriber struct {
-		subscriber
-	}
-	h := &subscriberHandler{hdlr}
-	return s.Handle(s.NewHandler(&Subscriber{h}, opts...))
-}
-
-type subscriberHandler struct {
-	SubscriberHandler
-}
-
-func (h *subscriberHandler) Subscribe(ctx context.Context, in *SubscribeRequest, out *SubscribeResponse) error {
-	return h.SubscriberHandler.Subscribe(ctx, in, out)
+func (h *publisherHandler) Multicast(ctx context.Context, in *MulticastRequest, out *MulticastResponse) error {
+	return h.PublisherHandler.Multicast(ctx, in, out)
 }

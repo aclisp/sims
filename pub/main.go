@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/aclisp/sims/proto"
 	"github.com/micro/go-micro/v2"
@@ -11,8 +12,8 @@ import (
 func main() {
 	service := micro.NewService()
 	cl := proto.NewPublisherService("go.micro.srv.sims", service.Client())
-	_, err := cl.Publish(context.Background(), &proto.PublishRequest{
-		UserId: "homerhuang",
+	res, err := cl.Multicast(context.Background(), &proto.MulticastRequest{
+		UserId: os.Args[1:],
 		Event: &proto.Event{
 			Type: proto.EventType_EVT_TEXT,
 			Data: []byte("hello world!"),
@@ -21,5 +22,5 @@ func main() {
 	if err != nil {
 		logger.Fatalf("publish error: %v", err)
 	}
-	logger.Info("done")
+	logger.Infof("done: %v", res)
 }

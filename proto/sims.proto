@@ -25,19 +25,20 @@ enum EventType {
 message ServerConfig {
 }
 
-message User {
-}
-
 message Header {
     string request_id = 1; // RPC request scope
     string user_id    = 2; // User scope
     string device_id  = 3; // device scope
-    repeated string groups = 4; // subscription group IDs
+    string user_agent = 4;
 }
 
 message Event {
     EventType type = 1;
     bytes data = 2;
+}
+
+message Selector {
+    string user_agent = 1;
 }
 
 service Hub {
@@ -49,11 +50,8 @@ service Hub {
 }
 
 service Publisher {
-    rpc Publish (PublishRequest) returns (PublishResponse);
-}
-
-service Subscriber {
-    rpc Subscribe (SubscribeRequest) returns (SubscribeResponse);
+    rpc Unicast (UnicastRequest) returns (UnicastResponse);
+    rpc Multicast (MulticastRequest) returns (MulticastResponse);
 }
 
 message EventsRequest {
@@ -74,18 +72,23 @@ message DisconnectRequest {
 message DisconnectResponse {
 }
 
-message PublishRequest {
+message UnicastRequest {
     string user_id = 1;
     Event event = 2;
+    Selector user_selector = 3;
 }
 
-message PublishResponse {
+message UnicastResponse {
 }
 
-message SubscribeRequest {
+message MulticastRequest {
+    repeated string user_id = 1;
+    Event event = 2;
+    map<string, Selector> user_selector = 3;
 }
 
-message SubscribeResponse {
+message MulticastResponse {
+    map<string, ErrorCode> user_errcode = 1;
 }
 
 message HeartbeatRequest {

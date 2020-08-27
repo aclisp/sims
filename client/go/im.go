@@ -25,7 +25,7 @@ type Client struct {
 // Publish TODO
 func (c *Client) Publish(toUserID, text string) error {
 	node := proto.NewPublisherClient(c.conn)
-	_, err := node.Publish(context.TODO(), &proto.PublishRequest{
+	_, err := node.Unicast(context.TODO(), &proto.UnicastRequest{
 		UserId: toUserID,
 		Event: &proto.Event{
 			Type: proto.EventType_EVT_TEXT,
