@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Client TODO
-type Client struct {
+// GRPCClient TODO
+type GRPCClient struct {
 	Target string
 	UserID string
 
@@ -22,8 +22,8 @@ type Client struct {
 	conn         *grpc.ClientConn
 }
 
-// Publish TODO
-func (c *Client) Publish(toUserID, text string) error {
+// Unicast TODO
+func (c *GRPCClient) Unicast(toUserID, text string) error {
 	node := proto.NewPublisherClient(c.conn)
 	_, err := node.Unicast(context.TODO(), &proto.UnicastRequest{
 		UserId: toUserID,
@@ -33,13 +33,13 @@ func (c *Client) Publish(toUserID, text string) error {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("sims publish: %w", err)
+		return fmt.Errorf("sims unicast: %w", err)
 	}
 	return nil
 }
 
 // Subscribe TODO
-func (c *Client) Subscribe(callback func(*proto.Event)) {
+func (c *GRPCClient) Subscribe(callback func(*proto.Event)) {
 	c.subscribeCtx, c.cancel = context.WithCancel(context.Background())
 	go func() {
 		for {
@@ -55,7 +55,7 @@ func (c *Client) Subscribe(callback func(*proto.Event)) {
 }
 
 // SubscribeEvent TODO
-func (c *Client) SubscribeEvent(ctx context.Context, callback func(*proto.Event)) error {
+func (c *GRPCClient) SubscribeEvent(ctx context.Context, callback func(*proto.Event)) error {
 	conn, err := grpc.DialContext(ctx, c.Target, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return fmt.Errorf("grpc dial: %w", err)
@@ -133,7 +133,7 @@ func (c *Client) SubscribeEvent(ctx context.Context, callback func(*proto.Event)
 }
 
 // Close TODO
-func (c *Client) Close() error {
+func (c *GRPCClient) Close() error {
 	defer func() {
 		if c.cancel != nil {
 			c.cancel()

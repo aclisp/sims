@@ -1,13 +1,7 @@
 package im_test
 
 import (
-	"bytes"
 	"context"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
-	"strings"
 	"testing"
 	"time"
 
@@ -15,7 +9,7 @@ import (
 	proto "github.com/aclisp/sims/proto/go"
 )
 
-func TestEvent(t *testing.T) {
+func TestEventHTTP(t *testing.T) {
 	bin := bin()
 
 	server := Command{Path: bin, Name: "server", Args: []string{"--server_address", "127.0.0.1:18080"}}
@@ -23,8 +17,8 @@ func TestEvent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client := im.Client{
-		Target: "127.0.0.1:18080",
+	client := im.HTTPClient{
+		Target: "127.0.0.1:8080",
 		UserID: "homerhuang",
 	}
 
@@ -45,7 +39,7 @@ func TestEvent(t *testing.T) {
 	}()
 	time.Sleep(time.Second)
 
-	if err := client.Publish("homerhuang", Text); err != nil {
+	if err := client.Unicast("homerhuang", Text); err != nil {
 		t.Log(err)
 		t.Fail()
 	}
@@ -62,7 +56,7 @@ func TestEvent(t *testing.T) {
 	}
 }
 
-func TestClose(t *testing.T) {
+func TestCloseHTTP(t *testing.T) {
 	bin := bin()
 
 	server := Command{Path: bin, Name: "server", Args: []string{"--server_address", "127.0.0.1:18080"}}
@@ -70,8 +64,8 @@ func TestClose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client := im.Client{
-		Target: "127.0.0.1:18080",
+	client := im.HTTPClient{
+		Target: "127.0.0.1:8080",
 		UserID: "homerhuang",
 	}
 
@@ -99,38 +93,4 @@ func TestClose(t *testing.T) {
 	for _, out := range server.Out() {
 		t.Log(out)
 	}
-}
-
-// bin returns the project `bin` dir path; must be called from TestXXX
-func bin() string {
-	_, filename, _, _ := runtime.Caller(1)
-	return filepath.Join(filepath.Dir(filename), "../../bin")
-}
-
-type Command struct {
-	Path string
-	Name string
-	Args []string
-	cmd  *exec.Cmd
-	out  bytes.Buffer
-}
-
-func (s *Command) Start() error {
-	s.cmd = exec.Command(filepath.Join(s.Path, s.Name), s.Args...)
-	s.cmd.Stdout = &s.out
-	s.cmd.Stderr = &s.out
-	if err := s.cmd.Start(); err != nil {
-		return err
-	}
-	time.Sleep(time.Second)
-	return nil
-}
-
-func (s *Command) Stop() {
-	s.cmd.Process.Signal(os.Interrupt)
-	s.cmd.Wait()
-}
-
-func (s *Command) Out() []string {
-	return strings.Split(s.out.String(), "\n")
 }

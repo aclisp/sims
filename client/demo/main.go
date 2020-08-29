@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	client := im.Client{
-		Target: "127.0.0.1:18080",
+	client := im.HTTPClient{
+		Target: "127.0.0.1:8080",
 		UserID: "homerhuang",
 	}
 	client.Subscribe(func(e *proto.Event) {
