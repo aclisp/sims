@@ -4,6 +4,7 @@ package rpc
 import (
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"net/textproto"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 	"github.com/micro/go-micro/v2/registry"
 	"github.com/micro/go-micro/v2/util/ctx"
 	"github.com/micro/go-micro/v2/util/qson"
+	"github.com/minio/highwayhash"
 	"github.com/oxtoacart/bpool"
 )
 
@@ -50,6 +52,8 @@ var (
 	}
 
 	bufferPool = bpool.NewSizedBufferPool(1024, 8)
+
+	zeroKey [32]byte
 )
 
 type rpcHandler struct {
@@ -65,11 +69,52 @@ func (b *buffer) Write(_ []byte) (int, error) {
 	return 0, nil
 }
 
+// scoreNodes returns a score for each node found in the given services.
+func scoreNodes(key string, services []*registry.Service) (possibleNodes []*registry.Node, scores []uint64) {
+	// Generate a base hashing key based off the supplied keys values.
+	base := highwayhash.Sum([]byte(key), zeroKey[:])
+
+	// Get all the possible nodes for the services, and assign a hash-based score to each of them.
+	for _, s := range services {
+		for _, n := range s.Nodes {
+			// Use the base key from above to calculate a derivative 64 bit hash number based off the instance ID.
+			score := highwayhash.Sum64([]byte(n.Id), base[:])
+			scores = append(scores, score)
+			possibleNodes = append(possibleNodes, n)
+		}
+	}
+	return
+}
+
 // strategy is a hack for selection
-func strategy(services []*registry.Service) selector.Strategy {
+func strategy(key string, services []*registry.Service) selector.Strategy {
 	return func(_ []*registry.Service) selector.Next {
 		// ignore input to this function, use services above
-		return selector.Random(services)
+		possibleNodes, scores := scoreNodes(key, services)
+
+		return func() (*registry.Node, error) {
+			var best uint64
+			pos := -1
+
+			// Find the best scoring node from those available.
+			for i, score := range scores {
+				if score >= best && possibleNodes[i] != nil {
+					best = score
+					pos = i
+				}
+			}
+
+			if pos < 0 {
+				// There was no node found.
+				return nil, selector.ErrNoneAvailable
+			}
+
+			// Choose this node and set it's score to zero to stop it being selected again.
+			node := possibleNodes[pos]
+			possibleNodes[pos] = nil
+			scores[pos] = 0
+			return node, nil
+		}
 	}
 }
 
@@ -111,6 +156,35 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// micro client
 	c := h.opts.Client
 
+	// handle X-Forwarded-For
+	var (
+		clientIP, ipList string
+		err error
+	)
+	if ipList, _, err = net.SplitHostPort(r.RemoteAddr); err == nil {
+		if prior, ok := r.Header["X-Forwarded-For"]; ok {
+			ipList = strings.Join(prior, ", ") + ", " + ipList
+		}
+		clientIP = strings.SplitN(ipList, ",", 2)[0]
+	}
+
+	// entrance debugging
+	if logger.V(logger.DebugLevel, logger.DefaultLogger) {
+		services := service.Services
+		nodes := make([]*registry.Node, 0, len(services))
+		for _, service := range services {
+			nodes = append(nodes, service.Nodes...)
+		}
+		nodeAddrs := make([]string, len(nodes))
+		for i, node := range nodes {
+			nodeAddrs[i] = node.Address
+		}
+		node, err := strategy(clientIP, services)(nil)()
+		if err == nil {
+			logger.Debugf("%v: from %v to %v of %v", r.URL, ipList, node.Address, service.Name)
+		}
+	}
+
 	// create context
 	cx := ctx.FromRequest(r)
 	// get context from http handler wrappers
@@ -137,12 +211,12 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// drop older context as it can have timeouts and create new
 		//		md, _ := metadata.FromContext(cx)
 		//serveWebsocket(context.TODO(), w, r, service, c)
-		serveWebsocket(cx, w, r, service, c)
+		serveWebsocket(cx, w, r, service, c, clientIP)
 		return
 	}
 
 	// create strategy
-	so := selector.WithStrategy(strategy(service.Services))
+	so := selector.WithStrategy(strategy(clientIP, service.Services))
 
 	// walk the standard call path
 	// get payload

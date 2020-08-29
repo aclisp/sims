@@ -20,7 +20,7 @@ import (
 )
 
 // serveWebsocket will stream rpc back over websockets assuming json
-func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request, service *api.Service, c client.Client) {
+func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request, service *api.Service, c client.Client, clientIP string) {
 	var op ws.OpCode
 
 	ct := r.Header.Get("Content-Type")
@@ -118,7 +118,7 @@ func serveWebsocket(ctx context.Context, w http.ResponseWriter, r *http.Request,
 		client.StreamingRequest(),
 	)
 
-	so := selector.WithStrategy(strategy(service.Services))
+	so := selector.WithStrategy(strategy(clientIP, service.Services))
 	// create a new stream
 	stream, err := c.Stream(ctx, req, client.WithSelectOption(so))
 	if err != nil {

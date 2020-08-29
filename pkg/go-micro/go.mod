@@ -48,6 +48,7 @@ require (
 	github.com/lucas-clemente/quic-go v0.14.1
 	github.com/micro/cli/v2 v2.1.2
 	github.com/miekg/dns v1.1.27
+	github.com/minio/highwayhash v1.0.0
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/nats-io/nats-server/v2 v2.1.6 // indirect
 	github.com/nats-io/nats.go v1.9.2
