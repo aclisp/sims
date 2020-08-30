@@ -3,11 +3,13 @@ package rpc
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
 	go_api "github.com/micro/go-micro/v2/api/proto"
+	"github.com/micro/go-micro/v2/registry"
 )
 
 func TestRequestPayloadFromRequest(t *testing.T) {
@@ -109,4 +111,80 @@ func TestRequestPayloadFromRequest(t *testing.T) {
 			t.Fatalf("Expected %v and %v to match", string(extByte), "")
 		}
 	})
+}
+
+func TestSelectorStrategy(t *testing.T) {
+	services := []*registry.Service{
+		{
+			Nodes: []*registry.Node{
+				{Id: "abcd"},
+				{Id: "efgh"},
+				{Id: "ijkl"},
+			},
+		},
+	}
+
+	route := make(map[string]string) // route is a map from key to node Id
+	moved := 0 // moved is a counter of moved route after adding a node
+	dist := make(map[string]int)
+	for i:=0; i<1000; i++ {
+		key := "00001"
+		node, _ := strategy(key, services)(nil)()
+		dist[node.Id]++
+	}
+	t.Log("fixed key dist", dist)
+
+	dist = make(map[string]int)
+	for i:=0; i<1000; i++ {
+		key := fmt.Sprintf("%05d", i)
+		node, _ := strategy(key, services)(nil)()
+		route[key] = node.Id
+		dist[node.Id]++
+	}
+	t.Log("rand key dist", dist)
+
+	// add a node
+	services = []*registry.Service{
+		{
+			Nodes: []*registry.Node{
+				{Id: "abcd"},
+				{Id: "efgh"},
+				{Id: "ijkl"},
+				{Id: "mnop"},
+			},
+		},
+	}
+	dist = make(map[string]int)
+	moved = 0
+	for i:=0; i<1000; i++ {
+		key := fmt.Sprintf("%05d", i)
+		node, _ := strategy(key, services)(nil)()
+		if route[key] != node.Id {
+			moved++
+		}
+		dist[node.Id]++
+	}
+	t.Log("add a node dist", dist, "moved", moved)
+
+	// del a node
+	services = []*registry.Service{
+		{
+			Nodes: []*registry.Node{
+				{Id: "abcd"},
+				//{Id: "efgh"},
+				{Id: "ijkl"},
+			},
+		},
+	}
+	dist = make(map[string]int)
+	moved = 0
+	for i:=0; i<1000; i++ {
+		key := fmt.Sprintf("%05d", i)
+		node, _ := strategy(key, services)(nil)()
+		if route[key] != node.Id {
+			moved++
+		}
+		dist[node.Id]++
+	}
+	t.Log("del a node dist", dist, "moved", moved)
 }
