@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/micro/cli/v2"
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/logger"
+	"github.com/micro/go-micro/v2/registry"
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
 )
@@ -25,6 +27,7 @@ const (
 var (
 	gRegistrar *Registrar = NewRegistrar()
 	gService   micro.Service
+	gAddress   string
 )
 
 func main() {
@@ -48,6 +51,33 @@ func main() {
 				}
 				go func() { logger.Warn(http.ListenAndServe(addr, nil)) }()
 			}
+			return nil
+		}),
+		micro.AfterStart(func() error {
+			serverName := gService.Server().Options().Name
+			serverID := gService.Server().Options().Id
+			myNodeID := serverName + "-" + serverID
+			services, err := gService.Options().Registry.GetService(serverName)
+			if err != nil {
+				logger.Errorf("get service %q from registry: %v", serverName, err)
+				return err
+			}
+			var myNode *registry.Node
+			for _, service := range services {
+				for _, node := range service.Nodes {
+					if myNodeID == node.Id {
+						myNode = node
+						break
+					}
+				}
+			}
+			if myNode == nil {
+				err := errors.New("self node not found in registry")
+				logger.Errorf("get service %q from registry: %v", serverName, err)
+				return err
+			}
+			logger.Infof("my address in registry is %v", myNode.Address)
+			gAddress = myNode.Address
 			return nil
 		}),
 	)
