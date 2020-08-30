@@ -46,3 +46,6 @@ Debugging
    + micro call go.micro.srv.sims Debug.Health
    + micro call go.micro.srv.sims Debug.Stats
    + micro call go.micro.srv.sims Debug.Cache
+1. start with debug level logging
+   + MICRO_LOG_LEVEL=debug bin/server --server_address :18080 --pprof_address :6060
+   + MICRO_LOG_LEVEL=debug ./micro api --type srv

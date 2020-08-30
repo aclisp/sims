@@ -23,6 +23,7 @@ const (
 
 var (
 	gRegistrar *Registrar = NewRegistrar()
+	gService   micro.Service
 )
 
 func main() {
@@ -48,6 +49,7 @@ func main() {
 	)
 
 	service.Init()
+	gService = service
 
 	proto.RegisterHubHandler(service.Server(), gRegistrar)
 	proto.RegisterStreamerHandler(service.Server(), gRegistrar)

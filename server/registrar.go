@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/aclisp/sims/proto"
 	"github.com/micro/go-micro/v2/logger"
+	"github.com/micro/go-micro/v2/registry"
 )
 
 // Registrar TODO
@@ -162,14 +164,14 @@ func (reg *Registrar) Events(ctx context.Context, req *proto.EventsRequest, stre
 	defer channel.Active.Dec()
 
 	// handle event
-	logger.Infof("[%v %v] handling events", uid, trace)
+	logger.Debugf("[%v %v] handling events", uid, trace)
 	for event := range channel.EventQueue {
 		if err := stream.Send(event); err != nil {
 			logger.Errorf("[%v %v] send event to stream error: %v", uid, trace, err)
 			return err
 		}
 	}
-	logger.Infof("[%v %v] no more events", uid, trace)
+	logger.Debugf("[%v %v] no more events", uid, trace)
 	return nil
 }
 
@@ -181,7 +183,30 @@ func (reg *Registrar) Connect(ctx context.Context, req *proto.ConnectRequest, re
 		return err
 	}
 	reg.createEventQueue(uid)
-	// persist
+	// persist: which server box the uid belongs to?
+	serverName := gService.Server().Options().Name
+	serverID := gService.Server().Options().Id
+	myNodeID := serverName + "-" + serverID
+	services, err := gService.Options().Registry.GetService(serverName)
+	if err != nil {
+		logger.Errorf("get service %q from registry: %v", serverName, err)
+		return err
+	}
+	var myNode *registry.Node
+	for _, service := range services {
+		for _, node := range service.Nodes {
+			if myNodeID == node.Id {
+				myNode = node
+				break
+			}
+		}
+	}
+	if myNode == nil {
+		err := errors.New("self node not found in registry")
+		logger.Errorf("get service %q from registry: %v", serverName, err)
+		return err
+	}
+	logger.Debugf("%v connected to %v", uid, myNode.Address)
 	return nil
 }
 
