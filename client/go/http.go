@@ -96,6 +96,7 @@ func (c *HTTPClient) Subscribe(callback func(*proto.Event)) {
 			if c.subscribeCtx.Err() != nil {
 				break
 			}
+			time.Sleep(5 * time.Second)
 		}
 		log.Println("subscribe done")
 	}()
