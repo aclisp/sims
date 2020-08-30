@@ -12,6 +12,7 @@ Simple IM Server
 * [x] add go-micro & grpc debugging and tracing
 * [ ] Real world deployment
 * [ ] Performance testing
+* [ ] Auth at API gateway with wechat
 
 Directory Layout
 ---
