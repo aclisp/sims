@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"sync"
 	"time"
@@ -182,7 +183,9 @@ func (reg *Registrar) Connect(ctx context.Context, req *proto.ConnectRequest, re
 	}
 	reg.createEventQueue(uid)
 	// persist: which server box the uid belongs to?
-	_ = gAddress
+	if gAddress == "" {
+		return errors.New("server does not start completely")
+	}
 	return nil
 }
 
