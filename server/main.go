@@ -9,6 +9,7 @@ import (
 	"github.com/micro/cli/v2"
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/logger"
+	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
 )
 
@@ -42,6 +43,9 @@ func main() {
 			if addr := ctx.String("pprof_address"); len(addr) > 0 {
 				// for pprof and trace
 				grpc.EnableTracing = true
+				trace.AuthRequest = func(req *http.Request) (any, sensitive bool) {
+					return true, true
+				}
 				go func() { logger.Warn(http.ListenAndServe(addr, nil)) }()
 			}
 			return nil
