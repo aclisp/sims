@@ -16,6 +16,9 @@ vendor:
 build:
 	go build -a -installsuffix cgo -ldflags "-s -w ${LDFLAGS}" -o $(NAME)
 
+linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-s -w ${LDFLAGS}" -o ../bin/gate
+
 docker:
 	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
 	docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest
@@ -31,4 +34,4 @@ test: vet
 clean:
 	rm -rf ./micro
 
-.PHONY: build clean vet test docker
+.PHONY: build clean vet test docker linux
