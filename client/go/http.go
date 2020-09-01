@@ -125,7 +125,11 @@ func (c *HTTPClient) SubscribeEvent(ctx context.Context, h EventHandler) error {
 		header       = &proto.Header{
 			UserId: c.UserID,
 		}
-		connectReq   = &proto.ConnectRequest{Header: header}
+		connectReq = &proto.ConnectRequest{Header: header}
+		eventsReq  = &proto.EventsRequest{Header: &proto.Header{
+			UserId:    c.UserID,
+			RequestId: strconv.FormatInt(time.Now().Unix(), 10),
+		}}
 		heartbeatReq = &proto.HeartbeatRequest{Header: header}
 		cancel       context.CancelFunc
 	)
@@ -136,6 +140,17 @@ func (c *HTTPClient) SubscribeEvent(ctx context.Context, h EventHandler) error {
 	buf, _ := jsonMarshal(connectReq)
 	if err := c.post(ctx, connectURL, contentJSON, bytes.NewReader(buf)); err != nil {
 		return fmt.Errorf("node connect: %w", err)
+	}
+
+	conn, _, _, err := c.wsDialer.Dial(ctx, eventsURL)
+	if err != nil {
+		return fmt.Errorf("node websocket dial: %w", err)
+	}
+	defer conn.Close()
+
+	buf, _ = jsonMarshal(eventsReq)
+	if err := wsutil.WriteClientText(conn, buf); err != nil {
+		return fmt.Errorf("node websocket send: %w", err)
 	}
 
 	errHeartbeat := make(chan error, 1)
@@ -153,24 +168,6 @@ func (c *HTTPClient) SubscribeEvent(ctx context.Context, h EventHandler) error {
 
 	errEvent := make(chan error, 1)
 	go func() {
-		conn, _, _, err := c.wsDialer.Dial(context.Background(), eventsURL)
-		if err != nil {
-			errEvent <- err
-			return
-		}
-		defer conn.Close()
-
-		buf, _ := jsonMarshal(&proto.EventsRequest{
-			Header: &proto.Header{
-				UserId:    c.UserID,
-				RequestId: strconv.FormatInt(time.Now().Unix(), 10),
-			},
-		})
-		if err := wsutil.WriteClientText(conn, buf); err != nil {
-			errEvent <- err
-			return
-		}
-
 		for {
 			data, err := wsutil.ReadServerText(conn)
 			if err == io.EOF {
