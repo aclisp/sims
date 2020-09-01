@@ -3,11 +3,11 @@ interface Event {
     data: string;
 }
 
-interface EventCallback {
+interface EventHandler {
     (event: Event): void;
 }
 
-interface ErrorCallback {
+interface ErrorHandler {
     (err: Error): void;
 }
 
@@ -22,7 +22,7 @@ export default class EventStream {
         this.closed = true;
     }
 
-    subscribe(onEvent: EventCallback) {
+    subscribe(onEvent: EventHandler) {
         this.closed = false;
         const onError = (err: Error) => {
             if (!this.closed) {
@@ -35,7 +35,7 @@ export default class EventStream {
         this.subscribeEvent(onEvent, onError);
     }
 
-    subscribeEvent(onEvent: EventCallback, onError: ErrorCallback) {
+    subscribeEvent(onEvent: EventHandler, onError: ErrorHandler) {
         const connectUrl = `http://${this.target}/sims/hub/connect`;
         const heartbeatUrl = `http://${this.target}/sims/hub/heartbeat`;
         const body = JSON.stringify({

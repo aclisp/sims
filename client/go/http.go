@@ -37,6 +37,19 @@ type HTTPClient struct {
 	wsDialer     ws.Dialer
 }
 
+// EventHandler handles server-sent events
+type EventHandler interface {
+	OnEvent(*proto.Event)
+}
+
+// EventHandlerFunc is an adapter to allow the use of ordinary functions as event handlers
+type EventHandlerFunc func(*proto.Event)
+
+// OnEvent calls f(e)
+func (f EventHandlerFunc) OnEvent(e *proto.Event) {
+	f(e)
+}
+
 func jsonMarshal(m pb.Message) ([]byte, error) {
 	b := new(bytes.Buffer)
 	err := jsonMarshaler.Marshal(b, m)
@@ -86,11 +99,11 @@ func (c *HTTPClient) Unicast(toUserID, text string) error {
 }
 
 // Subscribe TODO
-func (c *HTTPClient) Subscribe(callback func(*proto.Event)) {
+func (c *HTTPClient) Subscribe(h EventHandler) {
 	c.subscribeCtx, c.cancel = context.WithCancel(context.Background())
 	go func() {
 		for {
-			if err := c.SubscribeEvent(c.subscribeCtx, callback); err != nil {
+			if err := c.SubscribeEvent(c.subscribeCtx, h); err != nil {
 				log.Printf("subscribe event failure, retrying: %v", err)
 			}
 			if c.subscribeCtx.Err() != nil {
@@ -103,7 +116,7 @@ func (c *HTTPClient) Subscribe(callback func(*proto.Event)) {
 }
 
 // SubscribeEvent TODO
-func (c *HTTPClient) SubscribeEvent(ctx context.Context, callback func(*proto.Event)) error {
+func (c *HTTPClient) SubscribeEvent(ctx context.Context, h EventHandler) error {
 	var (
 		contentJSON  = "application/json"
 		connectURL   = fmt.Sprintf("http://%s/sims/hub/connect", c.Target)
@@ -177,7 +190,7 @@ func (c *HTTPClient) SubscribeEvent(ctx context.Context, callback func(*proto.Ev
 			switch event.Type {
 			case proto.EventType_EVT_HEARTBEAT:
 			default:
-				callback(event)
+				h.OnEvent(event)
 			}
 		}
 		close(errEvent)

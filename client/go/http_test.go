@@ -26,13 +26,13 @@ func TestEventHTTP(t *testing.T) {
 
 	errSubscribe := make(chan error, 1)
 	go func() {
-		if err := client.SubscribeEvent(context.Background(), func(e *proto.Event) {
+		if err := client.SubscribeEvent(context.Background(), im.EventHandlerFunc(func(e *proto.Event) {
 			t.Log(e)
 			if e.Type == proto.EventType_EVT_TEXT && string(e.Data) == Text {
 			} else {
 				t.Fail()
 			}
-		}); err != nil {
+		})); err != nil {
 			errSubscribe <- err
 		}
 		close(errSubscribe)
@@ -71,7 +71,7 @@ func TestCloseHTTP(t *testing.T) {
 
 	errSubscribe := make(chan error, 1)
 	go func() {
-		if err := client.SubscribeEvent(context.Background(), func(e *proto.Event) {}); err != nil {
+		if err := client.SubscribeEvent(context.Background(), im.EventHandlerFunc(func(e *proto.Event) {})); err != nil {
 			errSubscribe <- err
 		}
 		close(errSubscribe)
