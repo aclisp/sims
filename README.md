@@ -12,6 +12,7 @@ Simple IM Server
 * [x] add go-micro & grpc debugging and tracing
 * [ ] Real world deployment
 * [ ] Performance testing
+  + Preliminary conclusion: memory bound: 1G mem ~ 10k user
 * [ ] Auth at API gateway with wechat
 
 Directory Layout
@@ -39,14 +40,14 @@ Debugging
 ---
 
 1. Start server with `--pprof_address 127.0.0.1:6060`
-1. look for
+2. look for
    + http://127.0.0.1:6060/debug/pprof/
    + http://127.0.0.1:6060/debug/requests
    + http://127.0.0.1:6060/debug/events
-1. micro debug interface
+3. micro debug interface
    + micro call go.micro.srv.sims Debug.Health
    + micro call go.micro.srv.sims Debug.Stats
    + micro call go.micro.srv.sims Debug.Cache
-1. start with debug level logging
+4. start with debug level logging
    + MICRO_LOG_LEVEL=debug bin/server --server_address :18080 --pprof_address :6060
    + MICRO_LOG_LEVEL=debug ./micro api --type srv
