@@ -13,7 +13,8 @@ Simple IM Server
 * [ ] Real world deployment
 * [ ] Performance testing
   + Preliminary conclusion: memory bound: 1G mem ~ 10k user
-* [ ] Auth at API gateway with wechat
+* [ ] Authentication at API gateway with wechat
+* [ ] Authorization on event publishing
 
 Directory Layout
 ---
@@ -24,7 +25,6 @@ Directory Layout
   + `go` golang sdk
   + `js` typescript sdk
   + `java` java sdk
-* `gate/` API gateway
 * `pkg/` reusable lib
   + `codec` ???
   + `grpcproxy` grpc transparent reverse proxy
