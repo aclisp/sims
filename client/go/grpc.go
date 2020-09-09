@@ -49,6 +49,7 @@ func (c *GRPCClient) Subscribe(callback func(*proto.Event)) {
 			if c.subscribeCtx.Err() != nil {
 				break
 			}
+			time.Sleep(5 * time.Second)
 		}
 		log.Println("subscribe done")
 	}()
@@ -75,6 +76,16 @@ func (c *GRPCClient) SubscribeEvent(ctx context.Context, callback func(*proto.Ev
 		return fmt.Errorf("node connect: %w", err)
 	}
 
+	stream, err := streamer.Events(context.Background(), &proto.EventsRequest{
+		Header: &proto.Header{
+			UserId:    c.UserID,
+			RequestId: strconv.FormatInt(time.Now().Unix(), 10),
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("node event setup: %w", err)
+	}
+
 	errHeartbeat := make(chan error, 1)
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
@@ -92,17 +103,6 @@ func (c *GRPCClient) SubscribeEvent(ctx context.Context, callback func(*proto.Ev
 
 	errEvent := make(chan error, 1)
 	go func() {
-		header := &proto.Header{
-			UserId:    c.UserID,
-			RequestId: strconv.FormatInt(time.Now().Unix(), 10),
-		}
-		stream, err := streamer.Events(context.Background(), &proto.EventsRequest{
-			Header: header,
-		})
-		if err != nil {
-			errEvent <- err
-			return
-		}
 		for {
 			event, err := stream.Recv()
 			if err == io.EOF {
